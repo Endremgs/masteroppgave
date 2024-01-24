@@ -212,4 +212,6 @@ dataset/kolumbus/*.csv
 dataset/porto/*.csv
 dataset/rome/*.txt
 dataset/rome/*.csv
+dataset/rome/output/*.txt
+!dataset/rome/output/META-*.txt
 porto/output/*
