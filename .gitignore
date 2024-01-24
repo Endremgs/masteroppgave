@@ -208,10 +208,13 @@ pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python,macos
 
-dataset/kolumbus/*.csv
-dataset/porto/*.csv
 dataset/rome/*.txt
 dataset/rome/*.csv
 dataset/rome/output/*.txt
 !dataset/rome/output/META-*.txt
-porto/output/*
+
+dataset/porto/*.csv
+dataset/porto/output/*.txt
+!dataset/porto/output/META-*.txt
+
+dataset/kolumbus/*.csv
