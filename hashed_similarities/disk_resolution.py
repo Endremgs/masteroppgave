@@ -18,7 +18,7 @@ sys.path.append(parentdir)
 
 from schemes.helpers.lsh_disk import DiskLSH
 
-from utils.similarity_measures.distance import py_dtw
+from utils.similarity_measures.distance import py_dtw_euclidean
 from utils.similarity_measures.distance import frechet_disk
 
 # Some constants
@@ -84,7 +84,7 @@ K_DTW = _mirrorDiagonal(
 # ).flatten()  # .stack().values
 
 MEASURE = {
-    "py_dtw": py_dtw,
+    "py_dtw_euclidean": py_dtw_euclidean,
     "py_frechet": frechet_disk,
 }
 
@@ -97,7 +97,7 @@ REFERENCE = {
 }
 
 DISTANCE_FUNC = {
-    "py_dtw": "DTW",
+    "py_dtw_euclidean": "DTW",
     "py_frechet": "Frechet",
 }
 
@@ -147,8 +147,10 @@ def _constructDisk(city: str, diameter: float, layers: int, disks: int = 50) -> 
         raise ValueError(f"City/dataset argument {city} not supported")
 
 
-def _compute_hashes(disk: DiskLSH, measure: str = "py_dtw") -> dict[str, list]:
-    if measure == "py_dtw" or measure == "py_frechet":
+def _compute_hashes(
+    disk: DiskLSH, measure: str = "py_dtw_euclidean"
+) -> dict[str, list]:
+    if measure == "py_dtw_euclidean" or measure == "py_frechet":
         return disk.compute_dataset_hashes_with_KD_tree_numerical()
     else:
         raise ValueError("Preferred similarity measure not supported")
@@ -167,7 +169,7 @@ def _compute_disk_diameter_layers(
     city: str,
     layers: list[int],
     diameter: list[float],
-    measure: str = "py_dtw",
+    measure: str = "py_dtw_euclidean",
     reference: str = "dtw",
     parallell_jobs: int = 20,
 ):
@@ -200,7 +202,7 @@ def plot_disk_dia_layers(
     city: str,
     layers: list[int],
     diameter: list[float],
-    measure: str = "py_dtw",
+    measure: str = "py_dtw_euclidean",
     reference: str = "dtw",
     parallell_jobs: int = 20,
 ):
@@ -214,8 +216,8 @@ def plot_disk_dia_layers(
         The layers that will be visualised -> [x, y, z...]
     diameter : list[float]
         The diameter that will be visualised -> [min, max, step]
-    measure : str (default py_dtw)
-        The measure that will be used. Either dtw or frechet -> "py_dtw" or "py_frechet"
+    measure : str (default py_dtw_euclidean)
+        The measure that will be used. Either dtw or frechet -> "py_dtw_euclidean" or "py_frechet"
     reference : str (default dtw)
         The true similarities that will be used as reference. Either dtw or frechet
     paralell_jobs : int (default 20)
@@ -331,7 +333,7 @@ def plot_disk_numbers(
     layers: int,
     diameter: int,
     disks: list[int],
-    measure: str = "py_dtw",
+    measure: str = "py_dtw_euclidean",
     reference: str = "dtw",
     parallell_jobs: int = 20,
 ):
@@ -347,8 +349,8 @@ def plot_disk_numbers(
         The resolution that will be used for the disks
     disks : list[int]
         The number of disks that will be plotted
-    measure : str (default py_dtw)
-        The measure that will be used. Either dtw or frechet -> "py_dtw" or "py_frechet"
+    measure : str (default py_dtw_euclidean)
+        The measure that will be used. Either dtw or frechet -> "py_dtw_euclidean" or "py_frechet"
     reference : str (default dtw)
         The true similarities that will be used as reference. Either dtw or frechet
     paralell_jobs : int (default 20)
