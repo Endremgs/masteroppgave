@@ -15,11 +15,7 @@ parentdir = os.path.dirname(currentdir)
 sys.path.append(parentdir)
 from schemes.helpers.lsh_grid import GridLSH
 
-from utils.similarity_measures.distance import py_edit_distance as py_ed
-from utils.similarity_measures.distance import py_edit_distance_penalty as py_edp
-from utils.similarity_measures.distance import (
-    py_edit_distance_penalty_parallell as py_edp_parallell,
-)
+from utils.similarity_measures.distance import py_dtw_manhattan_parallel
 
 from constants import (
     PORTO_OUTPUT_FOLDER,
@@ -57,8 +53,7 @@ def KOLUMBUS_META(size: int):
 
 
 MEASURE = {
-    # "ed" : py_ed,
-    "dtw": py_edp,
+    "py_dtw_manhattan": py_dtw_manhattan_parallel,
 }
 
 
@@ -117,7 +112,7 @@ def measure_grid_hash_similarity_computation_time(
     size: int,
     res: float,
     layers: int,
-    measure: str = "dtw",
+    measure: str = "py_dtw_manhattan",
     parallell_jobs: int = 10,
 ) -> list:
     """
@@ -133,7 +128,7 @@ def measure_grid_hash_similarity_computation_time(
         The grid resolution
     layers : int
         The number of layers that will be used
-    measure : str (Either "ed" or "dtw" - "dtw" default)
+    measure : str (Either "py_dtw_manhattan" - "py_dtw_manhattan" default)
         The measure that will be used for computation
     parallell_jobs : int
         The number of jobs that will be run
@@ -156,6 +151,6 @@ def generate_grid_hash_similarity(
 
     Grid = _constructGrid(city, res, layers, size)
     hashes = Grid.compute_dataset_hashes()
-    similarities = py_edp_parallell(hashes)
+    similarities = py_dtw_manhattan_parallel(hashes)
 
     return similarities

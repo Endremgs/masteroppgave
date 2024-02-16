@@ -18,8 +18,7 @@ sys.path.append(parentdir)
 
 from schemes.helpers.lsh_grid import GridLSH
 
-from utils.similarity_measures.distance import py_edit_distance as py_ed
-from utils.similarity_measures.distance import py_edit_distance_penalty as py_edp
+from utils.similarity_measures.distance import py_dtw_manhattan
 
 from constants import (
     PORTO_OUTPUT_FOLDER,
@@ -53,10 +52,7 @@ ROME_META_TEST = f"../{ROME_OUTPUT_FOLDER}/META-50.TXT"
 KOLUMBUS_CHOSEN_DATA = f"../{KOLUMBUS_OUTPUT_FOLDER}/"
 KOLUMBUS_META_TEST = f"../{KOLUMBUS_OUTPUT_FOLDER}/META-50.TXT"
 
-MEASURE = {
-    "py_ed": py_ed,
-    "py_edp": py_edp,
-}
+MEASURE = {"py_dtw_manhattan": py_dtw_manhattan}
 
 
 # Defining helper functions:
@@ -114,8 +110,7 @@ REFERENCE = {
 }
 
 DISTANCE_FUNC = {
-    "py_ed": "ED",
-    "py_edp": "DTW",
+    "py_dtw_manhattan": "DTW_Manhattan",
 }
 
 
@@ -165,7 +160,6 @@ def _fun_wrapper_corr(args):
     city, res, lay, measure, reference = args
     Grid = _constructGrid(city, res, lay)
     hashes = Grid.compute_dataset_hashes()
-
     edits = _mirrorDiagonal(MEASURE[measure](hashes)).flatten()
     corr = np.corrcoef(edits, REFERENCE[city.lower() + reference.lower()])[0][1]
     return corr
@@ -175,7 +169,7 @@ def _compute_grid_res_layers(
     city: str,
     layers: list[int],
     resolution: list[float],
-    measure: str = "py_edp",
+    measure: str = "py_dtw_manhattan",
     reference: str = "dtw",
     parallell_jobs: int = 20,
 ):
@@ -208,7 +202,7 @@ def plot_grid_res_layers(
     city: str,
     layers: list[int],
     resolution: list[float],
-    measure: str = "py_edp",
+    measure: str = "py_dtw_manhattan",
     reference: str = "dtw",
     parallell_jobs: int = 20,
 ):
@@ -222,8 +216,8 @@ def plot_grid_res_layers(
         The layers that will be visualised -> [x, y, z...]
     resolution : list[float]
         The resolution that will be visualised -> [min, max, step]
-    measure : str (default py_edp)
-        The measure that will be used. Either edit distance or dtw -> "py_ed" or "py_edp"
+    measure : str (default py_dtw_manhattan)
+        The measure that will be used. Either dtw -> "py_dtw_manhattan"
     reference : str (default dtw)
         The true similarities that will be used as reference. Either dtw or frechet
     paralell_jobs : int (default 20)
