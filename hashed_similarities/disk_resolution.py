@@ -97,7 +97,7 @@ REFERENCE = {
 }
 
 DISTANCE_FUNC = {
-    "py_dtw_euclidean": "DTW",
+    "py_dtw_euclidean": "DTW_Euclidean",
     "py_frechet": "Frechet",
 }
 
@@ -302,7 +302,7 @@ def _compute_disk_numbers(
     layers: int,
     diameter: int,
     disks: list[int],
-    measure: str = "py_dtw",
+    measure: str = "py_dtw_euclidean",
     reference: str = "dtw",
     parallell_jobs: int = 20,
 ):
