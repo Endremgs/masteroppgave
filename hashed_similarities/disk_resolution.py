@@ -18,7 +18,6 @@ sys.path.append(parentdir)
 
 from schemes.helpers.lsh_disk import DiskLSH
 
-from utils.similarity_measures.distance import py_edit_distance as py_ed
 from utils.similarity_measures.distance import py_dtw
 from utils.similarity_measures.distance import frechet_disk
 
@@ -85,7 +84,6 @@ K_DTW = _mirrorDiagonal(
 # ).flatten()  # .stack().values
 
 MEASURE = {
-    "py_ed": py_ed,
     "py_dtw": py_dtw,
     "py_frechet": frechet_disk,
 }
@@ -99,7 +97,6 @@ REFERENCE = {
 }
 
 DISTANCE_FUNC = {
-    "py_ed": "ED",
     "py_dtw": "DTW",
     "py_frechet": "Frechet",
 }
@@ -150,10 +147,8 @@ def _constructDisk(city: str, diameter: float, layers: int, disks: int = 50) -> 
         raise ValueError(f"City/dataset argument {city} not supported")
 
 
-def _compute_hashes(disk: DiskLSH, measure: str = "py_ed") -> dict[str, list]:
-    if measure == "py_ed":
-        return disk.compute_dataset_hashes_with_KD_tree()
-    elif measure == "py_dtw" or measure == "py_frechet":
+def _compute_hashes(disk: DiskLSH, measure: str = "py_dtw") -> dict[str, list]:
+    if measure == "py_dtw" or measure == "py_frechet":
         return disk.compute_dataset_hashes_with_KD_tree_numerical()
     else:
         raise ValueError("Preferred similarity measure not supported")
@@ -220,7 +215,7 @@ def plot_disk_dia_layers(
     diameter : list[float]
         The diameter that will be visualised -> [min, max, step]
     measure : str (default py_dtw)
-        The measure that will be used. Either edit distance or dtw -> "py_ed" or "py_edp"
+        The measure that will be used. Either dtw or frechet -> "py_dtw" or "py_frechet"
     reference : str (default dtw)
         The true similarities that will be used as reference. Either dtw or frechet
     paralell_jobs : int (default 20)
@@ -353,7 +348,7 @@ def plot_disk_numbers(
     disks : list[int]
         The number of disks that will be plotted
     measure : str (default py_dtw)
-        The measure that will be used. Either edit distance or dtw -> "py_ed" or "py_edp"
+        The measure that will be used. Either dtw or frechet -> "py_dtw" or "py_frechet"
     reference : str (default dtw)
         The true similarities that will be used as reference. Either dtw or frechet
     paralell_jobs : int (default 20)
