@@ -15,7 +15,10 @@ parentdir = os.path.dirname(currentdir)
 sys.path.append(parentdir)
 from schemes.lsh_grid import GridLSH
 
-from utils.similarity_measures.distance import py_dtw_manhattan_parallel
+from utils.similarity_measures.distance import (
+    dtw_grid_parallel,
+    py_dtw_manhattan_parallel,
+)
 
 from constants import (
     PORTO_OUTPUT_FOLDER,
@@ -145,12 +148,16 @@ def measure_grid_hash_similarity_computation_time(
 
 
 def generate_grid_hash_similarity(
-    city: str, res: float, layers: int, size: int = 50
+    city: str, res: float, layers: int, measure: str = "dtw", size: int = 50
 ) -> pd.DataFrame:
     """Generates the full grid hash similarities and saves it as a dataframe"""
 
     Grid = _constructGrid(city, res, layers, size)
     hashes = Grid.compute_dataset_hashes()
-    similarities = py_dtw_manhattan_parallel(hashes)
+    # print("Hashes", hashes)
+    if measure == "dtw":
+        similarities = dtw_grid_parallel(hashes)
+    # elif measure == "frechet":
+    #     similarities = cy_frechet_pool(hashes)
 
     return similarities

@@ -3,6 +3,7 @@ File for a grid-based LSH scheme class in python.
 
 Takes min/max lat/lon as argument -> Could potentially make this integrated in the future
 """
+
 import random
 import os, sys
 
@@ -90,9 +91,7 @@ class GridLSH(LSHInterface):
         self.lat_res = td.get_latitude_difference(self.resolution)
         self.lon_res = td.get_longitude_difference(self.resolution, self.min_lat)
 
-        self.distortion = self._compute_grid_distortion(
-            self.resolution, self.layers
-        )
+        self.distortion = self._compute_grid_distortion(self.resolution, self.layers)
 
         self.hashes = dict()
 
@@ -115,9 +114,7 @@ class GridLSH(LSHInterface):
         """Additional set method for the meta_file attribute"""
         self.meta_file = meta_file
 
-    def _compute_grid_distortion(
-        self, resolution: float, layers: int
-    ) -> list[float]:
+    def _compute_grid_distortion(self, resolution: float, layers: int) -> list[float]:
         """Compute a random grid distortion off the resolution for the number of layers"""
 
         # Distortion should be a random float in the interval [0, resolution)
@@ -134,14 +131,56 @@ class GridLSH(LSHInterface):
 
             lat_distort = td.get_latitude_difference(distortion)
             lon_distort = td.get_longitude_difference(distortion, self.min_lat)
+            # print(self)
+            # print("lat_len", self.lat_len)
+            # print("lon_len", self.lon_len)
             hash = []
             for coordinate in trajectory:
                 lat, lon = coordinate
-
+                # print("Lat", lat)
+                # print("Lon", lon)
                 # Normalise the coordinate over 0 and compute the corresponding cell in for each direction
                 lat_hash = int((lat + lat_distort - self.min_lat) // self.lat_res)
                 lon_hash = int((lon + lon_distort - self.min_lon) // self.lon_res)
-                hash.append(an.get_alphabetical_value([lat_hash, lon_hash]))
+                # print("\n")
+                # print("Coordinate", coordinate)
+                # print("Lat distort", lat_distort)
+                # print("Lon distort", lon_distort)
+                # print("Lat hash", lat_hash)
+                # print("Lon hash", lon_hash)
+                # print("min lat", self.min_lat)
+                # print("min lon", self.min_lon)
+                # print("lat res", self.lat_res)
+                # print("lon res", self.lon_res)
+                # print("max lat", self.max_lat)
+                # print("max lon", self.max_lon)
+                # center_lat = (
+                #     self.min_lat + (lat_hash * self.lat_res) + (self.lat_res / 2)
+                # )
+                # center_lon = (
+                #     self.min_lon + (lon_hash * self.lon_res) + (self.lon_res / 2)
+                # )
+                center_lat = (
+                    self.min_lat
+                    + (
+                        ((lat + lat_distort - self.min_lat) // self.lat_res)
+                        * self.lat_res
+                    )
+                    + (self.lat_res / 2)
+                )
+                center_lon = (
+                    self.min_lon
+                    + (
+                        ((lon + lon_distort - self.min_lon) // self.lon_res)
+                        * self.lon_res
+                    )
+                    + (self.lon_res / 2)
+                )
+
+                print("Center lat", center_lat)
+                print("Center lon", center_lon)
+                hash.append([center_lat, center_lon])
+                # hash.append(an.get_alphabetical_value([lat_hash, lon_hash]))
             hashes.append(hash)
 
         # Then remove consecutive duplicates and return result:
