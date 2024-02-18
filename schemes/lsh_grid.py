@@ -160,6 +160,7 @@ class GridLSH(LSHInterface):
                 # center_lon = (
                 #     self.min_lon + (lon_hash * self.lon_res) + (self.lon_res / 2)
                 # )
+                # TODO: Find out whether this is possible/allowed, and if so, improve and find the actual center
                 center_lat = (
                     self.min_lat
                     + (
