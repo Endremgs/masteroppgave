@@ -676,10 +676,12 @@ class DiskLSH(LSHInterface):
                     print(f"\t{Fore.BLUE}{hash}{Style.RESET_ALL}")
 
     def print_disks(self):
-        for key in self.disks:
-            print(key)
-            for disk in self.disks[key]:
-                print(f"\t{disk}")
+        print("Number of layers", len(self.disks))
+        for layer in self.disks:
+            print("Layer: ", layer)
+            print("Number of disks in layer: ", len(self.disks[layer]))
+            for disk in self.disks[layer]:
+                print(f"Disk \t{disk}")
 
     def visualise_hashes(self, trajectory=None) -> None:
         """Method to visualise hashes"""
