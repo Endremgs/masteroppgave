@@ -1,12 +1,12 @@
 import numpy as np
 import pandas as pd
 import collections as co
-from traj_dist.distance import dtw as c_dtw
 
 from multiprocessing import Pool
+from traj_dist.distance import frechet as c_frechet
 
 
-def cy_dtw_hashes(hashes: dict[str, list[list[list[float]]]]) -> pd.DataFrame:
+def cy_frechet_hashes(hashes: dict[str, list[list[list[float]]]]) -> pd.DataFrame:
     """
     Method for computing DTW similarity between all layers of trajectories in a given dataset using cython, and summing these similarities.
 
@@ -32,7 +32,7 @@ def cy_dtw_hashes(hashes: dict[str, list[list[list[float]]]]) -> pd.DataFrame:
             ):
                 X = np.array(layer_i)
                 Y = np.array(layer_j)
-                dtw = c_dtw(
+                dtw = c_frechet(
                     X, Y
                 )  # Assuming c_dtw is defined elsewhere to calculate DTW similarity
                 total_dtw += dtw
@@ -49,11 +49,13 @@ def cy_dtw_hashes(hashes: dict[str, list[list[list[float]]]]) -> pd.DataFrame:
 
 def _fun_wrapper_hashes(args):
     x_layers, y_layers, j = args
-    dtw_sum = sum(c_dtw(np.array(x), np.array(y)) for x, y in zip(x_layers, y_layers))
-    return dtw_sum, j
+    frechet_sum = sum(
+        c_frechet(np.array(x), np.array(y)) for x, y in zip(x_layers, y_layers)
+    )
+    return frechet_sum, j
 
 
-def cy_dtw_hashes_pool(
+def cy_frechet_hashes_pool(
     trajectories: dict[str, list[list[list[float]]]]
 ) -> pd.DataFrame:
     """

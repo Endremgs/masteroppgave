@@ -102,6 +102,20 @@ def _constructGrid(city: str, res: float, layers: int, size: int) -> GridLSH:
         raise ValueError("City argument must be either porto or rome")
 
 
+def generate_grid_hash_similarity(
+    city: str, res: float, layers: int, measure: str = "dtw", size: int = 50
+) -> pd.DataFrame:
+    """Generates the full grid hash similarities and saves it as a dataframe"""
+
+    Grid = _constructGrid(city, res, layers, size)
+    hashes = Grid.compute_dataset_hashes()
+    similarities = compute_hash_similarity(
+        hashes=hashes, scheme="grid", measure=measure, paralLel=True
+    )
+
+    return similarities
+
+
 # TODO - measure computation time
 # def _computeSimilarities(args) -> list:
 #     hashes, measure = args
@@ -146,17 +160,3 @@ def _constructGrid(city: str, res: float, layers: int, size: int) -> GridLSH:
 #         )
 #         times.extend(time_measurement)
 #     return times
-
-
-def generate_grid_hash_similarity(
-    city: str, res: float, layers: int, measure: str = "dtw", size: int = 50
-) -> pd.DataFrame:
-    """Generates the full grid hash similarities and saves it as a dataframe"""
-
-    Grid = _constructGrid(city, res, layers, size)
-    hashes = Grid.compute_dataset_hashes()
-    similarities = compute_hash_similarity(
-        hashes=hashes, scheme="grid", measure=measure, paralell=True
-    )
-
-    return similarities

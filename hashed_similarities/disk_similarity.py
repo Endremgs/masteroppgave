@@ -107,6 +107,25 @@ def _constructDisk(
         raise ValueError("City argument must be either porto or rome")
 
 
+def generate_disk_hash_similarity(
+    city: str,
+    diameter: float,
+    layers: int,
+    disks: int,
+    measure: str = "dtw",
+    size: int = 50,
+) -> pd.DataFrame:
+    """Generates the full disk hash similarities and saves it as a dataframe"""
+
+    Disk = _constructDisk(city, diameter, layers, disks, size)
+    hashes = Disk.compute_dataset_hashes_with_KD_tree_numerical()
+    similarities = compute_hash_similarity(
+        hashes=hashes, scheme="disk", measure=measure, parallel=True
+    )
+
+    return similarities
+
+
 # TODO - measure computation time
 # def _computeSimilarities(args) -> list:
 #     hashes, measure = args
@@ -173,22 +192,3 @@ def _constructDisk(
 #         execution_times.extend(time_measurement)
 
 #     return execution_times
-
-
-def generate_disk_hash_similarity(
-    city: str,
-    diameter: float,
-    layers: int,
-    disks: int,
-    measure: str = "dtw",
-    size: int = 50,
-) -> pd.DataFrame:
-    """Generates the full disk hash similarities and saves it as a dataframe"""
-
-    Disk = _constructDisk(city, diameter, layers, disks, size)
-    hashes = Disk.compute_dataset_hashes_with_KD_tree_numerical()
-    similarities = compute_hash_similarity(
-        hashes=hashes, scheme="disk", measure=measure, paralell=True
-    )
-
-    return similarities
