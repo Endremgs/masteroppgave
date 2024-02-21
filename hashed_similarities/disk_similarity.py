@@ -4,20 +4,17 @@ Sheet that will be used to measure the time needed to generate similarities of t
 Will run N processess in parallell to measure time efficiency
 """
 
-from collections import OrderedDict
-from multiprocessing import Pool
 import time
 import timeit as ti
 import pandas as pd
 import os, sys
-import numpy as np
 
 currentdir = os.path.dirname(os.path.abspath("__file__"))
 parentdir = os.path.dirname(currentdir)
 sys.path.append(parentdir)
 from schemes.lsh_disk import DiskLSH
 
-from utils.similarity_measures.distance import compute_hash_similarity
+from utils.similarity_measures.distance import compute_hash_similarity, disk_coordinates
 
 from constants import (
     PORTO_OUTPUT_FOLDER,
@@ -52,12 +49,6 @@ def ROME_META(size: int):
 
 def KOLUMBUS_META(size: int):
     return f"../{KOLUMBUS_OUTPUT_FOLDER}/META-{size}.txt"
-
-
-# MEASURE = {
-#     "dtw": dtw_disk_parallel,
-#     "frechet": frechet_disk_parallel,
-# }
 
 
 def _constructDisk(
