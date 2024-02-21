@@ -17,7 +17,6 @@ from schemes.lsh_grid import GridLSH
 
 from utils.similarity_measures.distance import (
     compute_hash_similarity,
-    py_dtw_manhattan_parallel,
 )
 
 from constants import (
@@ -110,7 +109,7 @@ def generate_grid_hash_similarity(
     Grid = _constructGrid(city, res, layers, size)
     hashes = Grid.compute_dataset_hashes()
     similarities = compute_hash_similarity(
-        hashes=hashes, scheme="grid", measure=measure, paralLel=True
+        hashes=hashes, scheme="grid", measure=measure, parallel=True
     )
 
     return similarities
