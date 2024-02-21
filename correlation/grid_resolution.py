@@ -18,7 +18,7 @@ sys.path.append(parentdir)
 
 from schemes.lsh_grid import GridLSH
 
-from utils.similarity_measures.distance import py_dtw_manhattan
+from utils.similarity_measures.distance import compute_hash_similarity
 
 from constants import (
     PORTO_OUTPUT_FOLDER,
@@ -51,8 +51,6 @@ ROME_META_TEST = f"../{ROME_OUTPUT_FOLDER}/META-50.TXT"
 
 KOLUMBUS_CHOSEN_DATA = f"../{KOLUMBUS_OUTPUT_FOLDER}/"
 KOLUMBUS_META_TEST = f"../{KOLUMBUS_OUTPUT_FOLDER}/META-50.TXT"
-
-MEASURE = {"py_dtw_manhattan": py_dtw_manhattan}
 
 
 # Defining helper functions:
@@ -94,12 +92,10 @@ K_DTW = _mirrorDiagonal(
 ).flatten()
 K_FRE = _mirrorDiagonal(
     pd.read_csv(
-        "../benchmarks/similarities/kolumbus/kolumbus-frechet-testset.csv", index_col=0
+        f"../{SIMILARITIES_OUTPUT_FOLDER_KOLUMBUS}/kolumbus-frechet-testset.csv",
+        index_col=0,
     )
 ).flatten()
-
-# P_dtw_mirrored = mirrorDiagonal(P_dtw).flatten()
-# P_fre_mirrored = mirrorDiagonal(P_fre).flatten()
 
 REFERENCE = {
     "portodtw": P_DTW,
@@ -108,10 +104,6 @@ REFERENCE = {
     "romefrechet": R_FRE,
     "kolumbusdtw": K_DTW,
     "kolumbusfrechet": K_FRE,
-}
-
-DISTANCE_FUNC = {
-    "py_dtw_manhattan": "DTW_Manhattan",
 }
 
 
@@ -161,8 +153,14 @@ def _fun_wrapper_corr(args):
     city, res, lay, measure, reference = args
     Grid = _constructGrid(city, res, lay)
     hashes = Grid.compute_dataset_hashes()
-    edits = _mirrorDiagonal(MEASURE[measure](hashes)).flatten()
-    corr = np.corrcoef(edits, REFERENCE[city.lower() + reference.lower()])[0][1]
+
+    hashed_similarity = compute_hash_similarity(
+        hashes=hashes, scheme="grid", measure=measure, parallel=False
+    )
+
+    hashed_array = _mirrorDiagonal(hashed_similarity).flatten()
+    truesim_array = REFERENCE[city.lower() + reference.lower()]
+    corr = np.corrcoef(hashed_array, truesim_array)[0][1]
     return corr
 
 
@@ -203,9 +201,9 @@ def plot_grid_res_layers(
     city: str,
     layers: list[int],
     resolution: list[float],
-    measure: str = "py_dtw_manhattan",
+    measure: str = "dtw",
     reference: str = "dtw",
-    parallell_jobs: int = 20,
+    parallel_jobs: int = 20,
 ):
     """Visualises the 'optimal' values for resolution and layers for the grid hashes
 
@@ -218,15 +216,15 @@ def plot_grid_res_layers(
     resolution : list[float]
         The resolution that will be visualised -> [min, max, step]
     measure : str (default py_dtw_manhattan)
-        The measure that will be used. Either dtw -> "py_dtw_manhattan"
+        The measure that will be used. Either dtw -> "dtw" or frechet -> "frechet"
     reference : str (default dtw)
         The true similarities that will be used as reference. Either dtw or frechet
-    paralell_jobs : int (default 20)
-        Yhe number of parallell jobs that will create the data foundation
+    parallel_jobs : int (default 20)
+        Yhe number of parallel jobs that will create the data foundation
     """
 
     results = _compute_grid_res_layers(
-        city, layers, resolution, measure, reference, parallell_jobs
+        city, layers, resolution, measure, reference, parallel_jobs
     )
 
     fig, ax1 = plt.subplots(figsize=(10, 8), dpi=300)
@@ -267,7 +265,7 @@ def plot_grid_res_layers(
     ax2.text(
         0.99,
         0.99,
-        f"{city.capitalize()}/{DISTANCE_FUNC[measure]} - {reference.capitalize()}",
+        f"{city.capitalize()}: {measure.upper()} (Grid) - {reference.upper()} True",
         ha="right",
         va="top",
         transform=ax2.transAxes,
