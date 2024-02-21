@@ -178,8 +178,8 @@ class GridLSH(LSHInterface):
                     + (self.lon_res / 2)
                 )
 
-                print("Center lat", center_lat)
-                print("Center lon", center_lon)
+                # print("Center lat", center_lat)
+                # print("Center lon", center_lon)
                 hash.append([center_lat, center_lon])
                 # hash.append(an.get_alphabetical_value([lat_hash, lon_hash]))
             hashes.append(hash)
