@@ -11,6 +11,7 @@ import pandas as pd
 import sys, os
 from matplotlib import pyplot as plt
 from multiprocessing import Pool
+import scipy
 
 currentdir = os.path.dirname(os.path.abspath("__file__"))
 parentdir = os.path.dirname(currentdir)
@@ -84,7 +85,6 @@ R_FRE = _mirrorDiagonal(
         f"../{SIMILARITIES_OUTPUT_FOLDER_ROME}/rome-frechet-testset.csv", index_col=0
     )
 ).flatten()
-
 K_DTW = _mirrorDiagonal(
     pd.read_csv(
         f"../{SIMILARITIES_OUTPUT_FOLDER_KOLUMBUS}/kolumbus-dtw-testset.csv",
@@ -97,6 +97,9 @@ K_FRE = _mirrorDiagonal(
         index_col=0,
     )
 ).flatten()
+NULL_TEST_CSV = _mirrorDiagonal(
+    pd.read_csv("../benchmarks/true_similarities/null-testset.csv", index_col=0)
+).flatten()
 
 REFERENCE = {
     "portodtw": P_DTW,
@@ -105,6 +108,7 @@ REFERENCE = {
     "romefrechet": R_FRE,
     "kolumbusdtw": K_DTW,
     "kolumbusfrechet": K_FRE,
+    "null_testset": NULL_TEST_CSV,
 }
 
 
@@ -174,6 +178,23 @@ def _fun_wrapper_corr(args):
     return corr
 
 
+def _test_wrapper_corr(args):
+    city, dia, lay, measure, reference = args
+    Disk = _constructDisk(city, dia, lay)
+    hashes = _compute_hashes(Disk, measure)
+    hash_array = _mirrorDiagonal(MEASURE[measure](hashes)).flatten()
+    truesim_array_dtw = REFERENCE[city.lower() + "dtw"]
+    truesim_array_frechet = REFERENCE[city.lower() + "frechet"]
+    null_values = REFERENCE["null_testset"]
+    # spearman_corr = scipy.stats.spearmanr(hash_array, truesim_array_dtw)
+    # print("Spearman_corr", spearman_corr)
+    # kendall_corr = scipy.stats.kendalltau(hash_array, truesim_array_dtw)
+    # print("Kendall_corr", kendall_corr)
+
+    test_corr = np.corrcoef(hash_array, truesim_array_dtw)[0][1]
+    return test_corr
+
+
 def _compute_disk_diameter_layers(
     city: str,
     layers: list[int],
@@ -199,12 +220,18 @@ def _compute_disk_diameter_layers(
                     for _ in range(parallel_jobs)
                 ],
             )
+
+            # NOTE: The below function call can be used to verify the correlation methods by measuring
+            # correlation between authentic similarity values and approximately zero values or other combinations
+            # corrs = pool.map(
+            #     _test_wrapper_corr,
+            #     [(city, dia, lay, measure, reference) for _ in range(parallell_jobs)],
+            # )
             corr = np.average(np.array(corrs))
             std = np.std(np.array(corrs))
             result.append([corr, dia, std])
 
         results.append([result, lay])
-
     return results
 
 

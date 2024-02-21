@@ -36,3 +36,9 @@ def compute_hash_similarity(
             return cy_frechet_hashes_pool(hashes)
         else:
             return cy_frechet_hashes(hashes)
+
+
+def disk_coordinates(hashes: dict[str, list[list[float]]]) -> pd.DataFrame:
+    """The hashed disk coordinates"""
+    hashed_coordinates = transform_np_numerical_disk_hashes_to_non_np(hashes)
+    return hashed_coordinates

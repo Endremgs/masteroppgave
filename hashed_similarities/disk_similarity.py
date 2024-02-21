@@ -126,6 +126,25 @@ def generate_disk_hash_similarity(
     return similarities
 
 
+def generate_disk_hash_similarity_coordinates(
+    city: str,
+    diameter: float,
+    layers: int,
+    disks: int,
+    measure: str = "dtw",
+    size: int = 50,
+) -> any:
+    """Generates the full disk hash similarities and saves it as a dataframe"""
+
+    Disk = _constructDisk(city, diameter, layers, disks, size)
+    hashes = Disk.compute_dataset_hashes_with_KD_tree_numerical()
+    # Disk.print_disks()
+    hashed_coordinates = disk_coordinates(hashes)
+    all_disks_coordinates = Disk.disks
+
+    return hashed_coordinates, all_disks_coordinates
+
+
 # TODO - measure computation time
 # def _computeSimilarities(args) -> list:
 #     hashes, measure = args
