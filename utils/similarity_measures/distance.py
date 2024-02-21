@@ -122,6 +122,6 @@ def dtw_disk_parallel(hashes: dict[str, list[list[float]]]) -> pd.DataFrame:
 
 
 def disk_coordinates(hashes: dict[str, list[list[float]]]) -> pd.DataFrame:
-    """DTW distance for disk hashes computed in parallell"""
-    transformed_data = transform_np_numerical_disk_hashes_to_non_np(hashes)
-    return transformed_data
+    """The hashed disk coordinates"""
+    hashed_coordinates = transform_np_numerical_disk_hashes_to_non_np(hashes)
+    return hashed_coordinates

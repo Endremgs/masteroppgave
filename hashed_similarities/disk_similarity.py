@@ -211,11 +211,7 @@ def generate_disk_hash_similarity_coordinates(
     Disk = _constructDisk(city, diameter, layers, disks, size)
     hashes = Disk.compute_dataset_hashes_with_KD_tree_numerical()
     # Disk.print_disks()
+    hashed_coordinates = disk_coordinates(hashes)
+    all_disks_coordinates = Disk.disks
 
-    if measure == "dtw":
-        coordinates = disk_coordinates(hashes)
-    elif measure == "frechet":
-        coordinates = disk_coordinates(hashes)
-    else:
-        raise ValueError(f"Measure must be either 'dtw' or 'frechet', not {measure}")
-    return coordinates, Disk.disks
+    return hashed_coordinates, all_disks_coordinates
