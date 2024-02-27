@@ -79,6 +79,12 @@ class GridLSH(LSHInterface):
         self.layers = layers
         self.meta_file = meta_file
         self.data_path = data_path
+        # print("Minimum latitude", self.min_lat)
+        # print("Maximum latitude", self.max_lat)
+        # print("Minimum longitude", self.min_lon)
+        # print("Maximum longitude", self.max_lon)
+        # print("Resolution", self.resolution)
+        # print("Layers", self.layers)
 
         # Second, instantiate the indirect variables required for the scheme
 
@@ -88,10 +94,29 @@ class GridLSH(LSHInterface):
         self.lon_len = td.calculate_trajectory_distance(
             [(self.min_lat, self.min_lon), (self.min_lat, self.max_lon)]
         )
+        # print("Lat len", self.lat_len)
+        # print("Lon len", self.lon_len)
+
         self.lat_res = td.get_latitude_difference(self.resolution)
         self.lon_res = td.get_longitude_difference(self.resolution, self.min_lat)
+        # print("Lat res", self.lat_res)
+        # print("Lon res", self.lon_res)
 
         self.distortion = self._compute_grid_distortion(self.resolution, self.layers)
+        # print("Distortion", self.distortion)
+        lat_cells = int((self.max_lat - self.min_lat) // self.lat_res)
+        lon_cells = int((self.max_lon - self.min_lon) // self.lon_res)
+        # TODO: initialize two lists (lat, lon) where each element represents a coordinate of the start of a cell.
+        # First element is min_lat, second element is min_lat + lat_res, third element is previous element + lat_res, etc.
+        # Same goes for lon.
+        self.latitude_cells, self.longitude_cells = self.generate_cell_coordinates(
+            self.min_lat,
+            self.min_lon,
+            self.lat_res,
+            self.lon_res,
+            lat_cells,
+            lon_cells,
+        )
 
         self.hashes = dict()
 
@@ -121,71 +146,36 @@ class GridLSH(LSHInterface):
         distortion = [random.random() * resolution for x in range(layers)]
         return distortion
 
+    def generate_cell_coordinates(
+        self, min_lat, min_lon, lat_res, lon_res, lat_count, lon_count
+    ):
+        latitude_cells = [min_lat + i * lat_res for i in range(lat_count)]
+        longitude_cells = [min_lon + j * lon_res for j in range(lon_count)]
+        return latitude_cells, longitude_cells
+
     def _create_trajectory_hash(self, trajectory: list[list[float]]) -> list[list[str]]:
         """Creates a hash for one trajectory for all layers, returns it as a list of length layers with a list for each hashed layer"""
 
         # Snap trajectories to grid:
         hashes = []
-        for layer in range(self.layers):
-            distortion = self.distortion[layer]
 
-            lat_distort = td.get_latitude_difference(distortion)
-            lon_distort = td.get_longitude_difference(distortion, self.min_lat)
-            # print(self)
-            # print("lat_len", self.lat_len)
-            # print("lon_len", self.lon_len)
+        for layer in range(self.layers):
+            # TODO: Perhaps the lists should be initialized here to utilise the distortion on the various layers
+            # distortion = self.distortion[layer]
+            # lat_distort = td.get_latitude_difference(distortion)
+            # lon_distort = td.get_longitude_difference(distortion, self.min_lat)
             hash = []
             for coordinate in trajectory:
                 lat, lon = coordinate
-                # print("Lat", lat)
-                # print("Lon", lon)
-                # Normalise the coordinate over 0 and compute the corresponding cell in for each direction
-                lat_hash = int((lat + lat_distort - self.min_lat) // self.lat_res)
-                lon_hash = int((lon + lon_distort - self.min_lon) // self.lon_res)
-                # print("\n")
-                # print("Coordinate", coordinate)
-                # print("Lat distort", lat_distort)
-                # print("Lon distort", lon_distort)
-                # print("Lat hash", lat_hash)
-                # print("Lon hash", lon_hash)
-                # print("min lat", self.min_lat)
-                # print("min lon", self.min_lon)
-                # print("lat res", self.lat_res)
-                # print("lon res", self.lon_res)
-                # print("max lat", self.max_lat)
-                # print("max lon", self.max_lon)
-                # center_lat = (
-                #     self.min_lat + (lat_hash * self.lat_res) + (self.lat_res / 2)
-                # )
-                # center_lon = (
-                #     self.min_lon + (lon_hash * self.lon_res) + (self.lon_res / 2)
-                # )
-                # TODO: Find out whether this is possible/allowed, and if so, improve and find the actual center
-                center_lat = (
-                    self.min_lat
-                    + (
-                        ((lat + lat_distort - self.min_lat) // self.lat_res)
-                        * self.lat_res
-                    )
-                    + (self.lat_res / 2)
+                hashed_coordinate = td.find_nearest_gridpoint(
+                    (lat, lon), self.latitude_cells, self.longitude_cells
                 )
-                center_lon = (
-                    self.min_lon
-                    + (
-                        ((lon + lon_distort - self.min_lon) // self.lon_res)
-                        * self.lon_res
-                    )
-                    + (self.lon_res / 2)
-                )
+                hash.append(hashed_coordinate)
 
-                # print("Center lat", center_lat)
-                # print("Center lon", center_lon)
-                hash.append([center_lat, center_lon])
-                # hash.append(an.get_alphabetical_value([lat_hash, lon_hash]))
             hashes.append(hash)
-
         # Then remove consecutive duplicates and return result:
         result = []
+
         for hash in hashes:
             result.append([el[0] for el in groupby(hash)])
 
@@ -205,7 +195,6 @@ class GridLSH(LSHInterface):
         """
         files = mfh.read_meta_file(self.meta_file)
         trajectories = fh.load_trajectory_files(files, self.data_path)
-
         # Starting to hash the trajectories
         for key in trajectories:
             self.hashes[key] = self._create_trajectory_hash(trajectories[key])
