@@ -104,19 +104,6 @@ class GridLSH(LSHInterface):
 
         self.distortion = self._compute_grid_distortion(self.resolution, self.layers)
         # print("Distortion", self.distortion)
-        lat_cells = int((self.max_lat - self.min_lat) // self.lat_res)
-        lon_cells = int((self.max_lon - self.min_lon) // self.lon_res)
-        # TODO: initialize two lists (lat, lon) where each element represents a coordinate of the start of a cell.
-        # First element is min_lat, second element is min_lat + lat_res, third element is previous element + lat_res, etc.
-        # Same goes for lon.
-        self.latitude_cells, self.longitude_cells = self.generate_cell_coordinates(
-            self.min_lat,
-            self.min_lon,
-            self.lat_res,
-            self.lon_res,
-            lat_cells,
-            lon_cells,
-        )
 
         self.hashes = dict()
 
@@ -147,10 +134,23 @@ class GridLSH(LSHInterface):
         return distortion
 
     def generate_cell_coordinates(
-        self, min_lat, min_lon, lat_res, lon_res, lat_count, lon_count
+        self,
+        min_lat,
+        min_lon,
+        lat_res,
+        lon_res,
+        lat_count,
+        lon_count,
+        lat_distort,
+        lon_distort,
     ):
-        latitude_cells = [min_lat + i * lat_res for i in range(lat_count)]
-        longitude_cells = [min_lon + j * lon_res for j in range(lon_count)]
+        start_lat = min_lat + lat_distort
+        start_lon = min_lon + lon_distort
+        latitude_cells = [start_lat + i * lat_res for i in range(lat_count)]
+        longitude_cells = [start_lon + j * lon_res for j in range(lon_count)]
+        # latitude_cells = []
+        # longitude_cells = []
+
         return latitude_cells, longitude_cells
 
     def _create_trajectory_hash(self, trajectory: list[list[float]]) -> list[list[str]]:
@@ -161,9 +161,31 @@ class GridLSH(LSHInterface):
 
         for layer in range(self.layers):
             # TODO: Perhaps the lists should be initialized here to utilise the distortion on the various layers
-            # distortion = self.distortion[layer]
-            # lat_distort = td.get_latitude_difference(distortion)
-            # lon_distort = td.get_longitude_difference(distortion, self.min_lat)
+            distortion = self.distortion[layer]
+            # print("Distortion", distortion)
+            lat_distort = td.get_latitude_difference(distortion)
+            lon_distort = td.get_longitude_difference(distortion, self.min_lat)
+            # print("Lat distort", lat_distort)
+            # print("Lon distort", lon_distort, "\n")
+
+            lat_cells = int((self.max_lat - self.min_lat) // self.lat_res)
+            lon_cells = int((self.max_lon - self.min_lon) // self.lon_res)
+            # TODO: initialize two lists (lat, lon) where each element represents a coordinate of the start of a cell.
+            # First element is min_lat, second element is min_lat + lat_res, third element is previous element + lat_res, etc.
+            # Same goes for lon.
+            self.latitude_cells, self.longitude_cells = self.generate_cell_coordinates(
+                self.min_lat,
+                self.min_lon,
+                self.lat_res,
+                self.lon_res,
+                lat_cells,
+                lon_cells,
+                lat_distort,
+                lon_distort,
+            )
+            # print("Latitudee cells", self.latitude_cells)
+            # print("Longitude cells", self.longitude_cells)
+
             hash = []
             for coordinate in trajectory:
                 lat, lon = coordinate
@@ -178,8 +200,11 @@ class GridLSH(LSHInterface):
 
         for hash in hashes:
             result.append([el[0] for el in groupby(hash)])
-
-        return result
+        total_hashed_coordinates = 0
+        for layer in result:
+            total_hashed_coordinates += len(layer)
+        # print("Total hashed coordinates", total_hashed_coordinates)
+        return result, total_hashed_coordinates
 
     def compute_dataset_hashes(self) -> dict[str, list]:
         """Method for computing the grid hashes for a given dataset and stores it in a dictionary
@@ -193,11 +218,21 @@ class GridLSH(LSHInterface):
         ---
         A dictionary containing the hashes
         """
+        # print(self, "\n")
         files = mfh.read_meta_file(self.meta_file)
         trajectories = fh.load_trajectory_files(files, self.data_path)
+        count = 0
         # Starting to hash the trajectories
         for key in trajectories:
-            self.hashes[key] = self._create_trajectory_hash(trajectories[key])
+            self.hashes[key], num_hashed_coordinates = self._create_trajectory_hash(
+                trajectories[key]
+            )
+            count += num_hashed_coordinates
+            # if count == 1:
+            #     break
+        # print("len(trajectories)", len(trajectories))
+        num_avg_hashed_coordinates = count / len(trajectories)
+        # print("Average number of hashed coordinates", num_avg_hashed_coordinates)
 
         return self.hashes
 
