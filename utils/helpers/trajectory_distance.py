@@ -84,17 +84,19 @@ def find_nearest_gridpoint(
     :param coordinate: A tuple of (lat, lon).
     :param latitude_cells: A list of latitude starting points.
     :param longitude_cells: A list of longitude starting points.
-    :return: A tuple of (lat_index, lon_index).
+    :return: a list with the hashed coordinates, i.e., coordinates to grid points which the original coordinate snapped to
     """
 
     lat, lon = coordinate
 
     # Find the closest latitude index
     min_lat_diff = min(latitude_cells, key=lambda x: abs(x - lat))
-    lat_index = latitude_cells.index(min_lat_diff)
 
     # Find the closest longitude index
     min_lon_diff = min(longitude_cells, key=lambda x: abs(x - lon))
+
+    # NOTE: Not in use, but could be used later on if indexes are better than coordinates/grid points to make up the hashed coordinate
+    lat_index = latitude_cells.index(min_lat_diff)
     lon_index = longitude_cells.index(min_lon_diff)
 
     return [min_lat_diff, min_lon_diff]

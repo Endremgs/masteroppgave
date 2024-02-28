@@ -90,12 +90,17 @@ class GridLSH(LSHInterface):
         self.lat_res = td.get_latitude_difference(self.resolution)
         self.lon_res = td.get_longitude_difference(self.resolution, self.min_lat)
 
+        # List of length layers with the distortion for each layer
         self.distortion = self._compute_grid_distortion(self.resolution, self.layers)
 
-        self.grids = dict()
+        # Dict with the grid points coordinates for each layer for latitude and longitude as a 2D-list
+        # Ex: {0: [[lat0, lat1, ...], [lon0, lon1, ...]] }
+        self.grid = dict()
+        # Calculate number of cells in the grid in both direction
         lat_cells = int((self.max_lat - self.min_lat) // self.lat_res)
         lon_cells = int((self.max_lon - self.min_lon) // self.lon_res)
         for layer in range(self.layers):
+            # Find distortion specific for each layer and in decimal degrees to shift cells in the grid
             distortion = self.distortion[layer]
             lat_distort = td.get_latitude_difference(distortion)
             lon_distort = td.get_longitude_difference(distortion, self.min_lat)
@@ -109,7 +114,7 @@ class GridLSH(LSHInterface):
                 lat_distort,
                 lon_distort,
             )
-            self.grids[layer] = [latitude_cells, longitude_cells]
+            self.grid[layer] = [latitude_cells, longitude_cells]
 
         self.hashes = dict()
 
@@ -150,11 +155,11 @@ class GridLSH(LSHInterface):
         lat_distort,
         lon_distort,
     ):
+        # First cell set to minimum + distortion
         latitude_cells = [min_lat + lat_distort + i * lat_res for i in range(lat_count)]
         longitude_cells = [
             min_lon + lon_distort + j * lon_res for j in range(lon_count)
         ]
-
         return latitude_cells, longitude_cells
 
     def _create_trajectory_hash(self, trajectory: list[list[float]]) -> list[list[str]]:
@@ -169,7 +174,7 @@ class GridLSH(LSHInterface):
             for coordinate in trajectory:
                 lat, lon = coordinate
                 hashed_coordinate = td.find_nearest_gridpoint(
-                    (lat, lon), self.grids[layer][0], self.grids[layer][1]
+                    (lat, lon), self.grid[layer][0], self.grid[layer][1]
                 )
                 hashes_in_layer.append(hashed_coordinate)
 

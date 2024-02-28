@@ -107,7 +107,6 @@ def generate_grid_hash_similarity(
     """Generates the full grid hash similarities and saves it as a dataframe"""
 
     Grid = _constructGrid(city, res, layers, size)
-    # print("Grid:", Grid)
     hashes = Grid.compute_dataset_hashes()
     similarities = compute_hash_similarity(
         hashes=hashes, scheme="grid", measure=measure, parallel=True
