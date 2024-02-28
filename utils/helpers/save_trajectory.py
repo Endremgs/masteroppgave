@@ -9,9 +9,12 @@ def save_current_trajectory(
     trajectory_file_prefix: str = "R",
 ) -> None:
     with open(f"{OUTPUT_FOLDER}/{trajectory_file_prefix}_{file_name}.txt", "w") as file:
+        counter = 0
         for coordinate in trajectory:
+            counter += 1
             lat, lon = coordinate
-            file.write("%s, %s\n" % (lat, lon))
+            if counter % 10 == 0:
+                file.write("%s, %s\n" % (lat, lon))
         file.close()
         return
 
