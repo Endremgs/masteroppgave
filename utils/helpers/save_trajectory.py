@@ -13,8 +13,9 @@ def save_current_trajectory(
         for coordinate in trajectory:
             counter += 1
             lat, lon = coordinate
-            if counter % 10 == 0:
-                file.write("%s, %s\n" % (lat, lon))
+            # if counter % 10 == 0:
+            #     file.write("%s, %s\n" % (lat, lon))
+            file.write("%s, %s\n" % (lat, lon))
         file.close()
         return
 
