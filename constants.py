@@ -32,3 +32,5 @@ SIMILARITIES_OUTPUT_FOLDER_ROME = "benchmarks/true_similarities/rome"
 # Kolumbus data paths
 KOLUMBUS_OUTPUT_FOLDER = "dataset/kolumbus/output"
 SIMILARITIES_OUTPUT_FOLDER_KOLUMBUS = "benchmarks/true_similarities/kolumbus"
+
+NUMBER_OF_TRAJECTORIES = 500

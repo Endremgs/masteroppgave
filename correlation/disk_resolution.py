@@ -41,18 +41,19 @@ from constants import (
     SIMILARITIES_OUTPUT_FOLDER_KOLUMBUS,
     SIMILARITIES_OUTPUT_FOLDER_PORTO,
     SIMILARITIES_OUTPUT_FOLDER_ROME,
+    NUMBER_OF_TRAJECTORIES,
 )
 
 # Defining some constants
 
 PORTO_CHOSEN_DATA = f"../{PORTO_OUTPUT_FOLDER}/"
-PORTO_META_TEST = f"../{PORTO_OUTPUT_FOLDER}/META-50.TXT"
+PORTO_META_TEST = f"../{PORTO_OUTPUT_FOLDER}/META-{NUMBER_OF_TRAJECTORIES}.TXT"
 
 ROME_CHOSEN_DATA = f"../{ROME_OUTPUT_FOLDER}/"
-ROME_META_TEST = f"../{ROME_OUTPUT_FOLDER}/META-50.TXT"
+ROME_META_TEST = f"../{ROME_OUTPUT_FOLDER}/META-{NUMBER_OF_TRAJECTORIES}.TXT"
 
 KOLUMBUS_CHOSEN_DATA = f"../{KOLUMBUS_OUTPUT_FOLDER}/"
-KOLUMBUS_META_TEST = f"../{KOLUMBUS_OUTPUT_FOLDER}/META-50.TXT"
+KOLUMBUS_META_TEST = f"../{KOLUMBUS_OUTPUT_FOLDER}/META-{NUMBER_OF_TRAJECTORIES}.TXT"
 
 
 # Defining helper functions:
@@ -66,7 +67,8 @@ def _mirrorDiagonal(M: np.ndarray) -> np.ndarray:
 
 P_DTW = _mirrorDiagonal(
     pd.read_csv(
-        f"../{SIMILARITIES_OUTPUT_FOLDER_PORTO}/porto-dtw-testset.csv", index_col=0
+        f"../{SIMILARITIES_OUTPUT_FOLDER_PORTO}/porto-dtw-{NUMBER_OF_TRAJECTORIES}.csv",
+        index_col=0,
     )
 ).flatten()
 P_FRE = _mirrorDiagonal(
@@ -77,7 +79,8 @@ P_FRE = _mirrorDiagonal(
 
 R_DTW = _mirrorDiagonal(
     pd.read_csv(
-        f"../{SIMILARITIES_OUTPUT_FOLDER_ROME}/rome-dtw-testset.csv", index_col=0
+        f"../{SIMILARITIES_OUTPUT_FOLDER_ROME}/rome-dtw-{NUMBER_OF_TRAJECTORIES}.csv",
+        index_col=0,
     )
 ).flatten()
 R_FRE = _mirrorDiagonal(
@@ -87,7 +90,7 @@ R_FRE = _mirrorDiagonal(
 ).flatten()
 K_DTW = _mirrorDiagonal(
     pd.read_csv(
-        f"../{SIMILARITIES_OUTPUT_FOLDER_KOLUMBUS}/kolumbus-dtw-testset.csv",
+        f"../{SIMILARITIES_OUTPUT_FOLDER_KOLUMBUS}/kolumbus-dtw-{NUMBER_OF_TRAJECTORIES}.csv",
         index_col=0,
     )
 ).flatten()

@@ -4,6 +4,7 @@ from matplotlib import colors
 import pandas as pd
 import numpy as np
 import os
+from constants import NUMBER_OF_TRAJECTORIES
 
 COLOR_GRID_HASH = "#69b3a2"
 COLOR_DISK_HASH = "violet"
@@ -199,7 +200,7 @@ def draw_similarity_correlation(
     porto_dtw = _mirrorDiagonal(
         pd.read_csv(
             os.path.abspath(
-                "../prosjektoppgave/benchmarks/similarities/porto/porto-dtw-fullset.csv"
+                f"../prosjektoppgave/benchmarks/similarities/porto/porto-dtw-{NUMBER_OF_TRAJECTORIES}.csv"
             ),
             index_col=0,
         )
@@ -212,7 +213,7 @@ def draw_similarity_correlation(
     rome_dtw = _mirrorDiagonal(
         pd.read_csv(
             os.path.abspath(
-                "../prosjektoppgave/benchmarks/similarities/rome/rome-dtw-fullset.csv"
+                f"../prosjektoppgave/benchmarks/similarities/rome/rome-dtw-{NUMBER_OF_TRAJECTORIES}.csv"
             ),
             index_col=0,
         )
@@ -299,7 +300,7 @@ if __name__ == "__main__":
         "../prosjektoppgave/hashed_similarities/output/grid/porto/grid_porto.csv"
     )
     dtw_sim_porto = os.path.abspath(
-        "../prosjektoppgave/benchmarks/similarities/porto/porto-dtw-fullset.csv"
+        f"../prosjektoppgave/benchmarks/similarities/porto/porto-dtw-{NUMBER_OF_TRAJECTORIES}.csv"
     )
 
     print(hash_sim_porto)

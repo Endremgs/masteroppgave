@@ -20,7 +20,7 @@ def compute_correlation_similarity(city: str, scheme: str, runs: int):
     porto_dtw = _mirrorDiagonal(
         pd.read_csv(
             os.path.abspath(
-                f"../{SIMILARITIES_OUTPUT_FOLDER_PORTO}/porto-dtw-testset.csv"
+                f"../{SIMILARITIES_OUTPUT_FOLDER_PORTO}/porto-dtw-50.csv"
             ),
             index_col=0,
         )
@@ -28,7 +28,7 @@ def compute_correlation_similarity(city: str, scheme: str, runs: int):
     porto_fre = _mirrorDiagonal(
         pd.read_csv(
             os.path.abspath(
-                f"../{SIMILARITIES_OUTPUT_FOLDER_PORTO}/porto-frechet-testset.csv"
+                f"../{SIMILARITIES_OUTPUT_FOLDER_PORTO}/porto-frechet-50.csv"
             ),
             index_col=0,
         )
