@@ -1,6 +1,5 @@
 """ Sheet containing distance methods related to trajectories and their hashes """
 
-
 from haversine import haversine, Unit
 import math
 
@@ -92,12 +91,10 @@ def find_nearest_gridpoint(
 
     # Find the closest latitude index
     min_lat_diff = min(latitude_cells, key=lambda x: abs(x - lat))
-    # print("min_lat_diff", min_lat_diff)
     lat_index = latitude_cells.index(min_lat_diff)
 
     # Find the closest longitude index
     min_lon_diff = min(longitude_cells, key=lambda x: abs(x - lon))
-    # print("min_lon_diff", min_lon_diff)
     lon_index = longitude_cells.index(min_lon_diff)
 
     return [min_lat_diff, min_lon_diff]
