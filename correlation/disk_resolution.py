@@ -73,7 +73,8 @@ P_DTW = _mirrorDiagonal(
 ).flatten()
 P_FRE = _mirrorDiagonal(
     pd.read_csv(
-        f"../{SIMILARITIES_OUTPUT_FOLDER_PORTO}/porto-frechet-50.csv", index_col=0
+        f"../{SIMILARITIES_OUTPUT_FOLDER_PORTO}/porto-frechet-{NUMBER_OF_TRAJECTORIES}.csv",
+        index_col=0,
     )
 ).flatten()
 
@@ -85,7 +86,8 @@ R_DTW = _mirrorDiagonal(
 ).flatten()
 R_FRE = _mirrorDiagonal(
     pd.read_csv(
-        f"../{SIMILARITIES_OUTPUT_FOLDER_ROME}/rome-frechet-50.csv", index_col=0
+        f"../{SIMILARITIES_OUTPUT_FOLDER_ROME}/rome-frechet-{NUMBER_OF_TRAJECTORIES}.csv",
+        index_col=0,
     )
 ).flatten()
 K_DTW = _mirrorDiagonal(
@@ -96,7 +98,7 @@ K_DTW = _mirrorDiagonal(
 ).flatten()
 K_FRE = _mirrorDiagonal(
     pd.read_csv(
-        f"../{SIMILARITIES_OUTPUT_FOLDER_KOLUMBUS}/kolumbus-frechet-50.csv",
+        f"../{SIMILARITIES_OUTPUT_FOLDER_KOLUMBUS}/kolumbus-frechet-{NUMBER_OF_TRAJECTORIES}.csv",
         index_col=0,
     )
 ).flatten()
