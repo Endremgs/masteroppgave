@@ -1,6 +1,5 @@
 """ Sheet containing distance methods related to trajectories and their hashes """
 
-
 from haversine import haversine, Unit
 import math
 
@@ -71,3 +70,33 @@ def get_euclidean_distance(pos1: list[float], pos2: list[float]) -> float:
     """
     distance = math.sqrt((pos1[0] - pos2[0]) ** 2 + (pos1[1] - pos2[1]) ** 2)
     return distance
+
+
+def find_nearest_gridpoint(
+    coordinate: tuple, latitude_cells: list[float], longitude_cells: list[float]
+) -> list[int, int]:
+    # find best matching grid point by finding the closest lat and lon for the lists based on the coordinate
+    # return the given lat and lon from the lists (or the index, depending on where to "unwrap" it).
+    # this now represents the hash of the coordinate. Later, duplicate hashes will be removed.
+    """
+    Find the nearest grid point indexes for a given coordinate.
+
+    :param coordinate: A tuple of (lat, lon).
+    :param latitude_cells: A list of latitude starting points.
+    :param longitude_cells: A list of longitude starting points.
+    :return: a list with the hashed coordinates, i.e., coordinates to grid points which the original coordinate snapped to
+    """
+
+    lat, lon = coordinate
+
+    # Find the closest latitude index
+    min_lat_diff = min(latitude_cells, key=lambda x: abs(x - lat))
+
+    # Find the closest longitude index
+    min_lon_diff = min(longitude_cells, key=lambda x: abs(x - lon))
+
+    # NOTE: Not in use, but could be used later on if indexes are better than coordinates/grid points to make up the hashed coordinate
+    lat_index = latitude_cells.index(min_lat_diff)
+    lon_index = longitude_cells.index(min_lon_diff)
+
+    return [min_lat_diff, min_lon_diff]
