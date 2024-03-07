@@ -46,13 +46,13 @@ from constants import (
 # Defining some constants
 
 PORTO_CHOSEN_DATA = f"../{PORTO_OUTPUT_FOLDER}/"
-PORTO_META_TEST = f"../{PORTO_OUTPUT_FOLDER}/META-{NUMBER_OF_TRAJECTORIES}.TXT"
+PORTO_META_FILE = f"../{PORTO_OUTPUT_FOLDER}/META-{NUMBER_OF_TRAJECTORIES}.TXT"
 
 ROME_CHOSEN_DATA = f"../{ROME_OUTPUT_FOLDER}/"
-ROME_META_TEST = f"../{ROME_OUTPUT_FOLDER}/META-{NUMBER_OF_TRAJECTORIES}.TXT"
+ROME_META_FILE = f"../{ROME_OUTPUT_FOLDER}/META-{NUMBER_OF_TRAJECTORIES}.TXT"
 
 KOLUMBUS_CHOSEN_DATA = f"../{KOLUMBUS_OUTPUT_FOLDER}/"
-KOLUMBUS_META_TEST = f"../{KOLUMBUS_OUTPUT_FOLDER}/META-{NUMBER_OF_TRAJECTORIES}.TXT"
+KOLUMBUS_META_FILE = f"../{KOLUMBUS_OUTPUT_FOLDER}/META-{NUMBER_OF_TRAJECTORIES}.TXT"
 
 
 # Defining helper functions:
@@ -113,7 +113,9 @@ REFERENCE = {
 }
 
 
-def _constructGrid(city: str, res: float, layers: int) -> GridLSH:
+def _constructGrid(
+    city: str, res: float, layers: int, meta_file: str, chosen_data: str
+) -> GridLSH:
     """Constructs a grid hash object over the given city"""
     if city.lower() == "porto":
         return GridLSH(
@@ -124,8 +126,8 @@ def _constructGrid(city: str, res: float, layers: int) -> GridLSH:
             P_MAX_LON,
             res,
             layers,
-            PORTO_META_TEST,
-            PORTO_CHOSEN_DATA,
+            meta_file,
+            chosen_data,
         )
     elif city.lower() == "rome":
         return GridLSH(
@@ -136,8 +138,8 @@ def _constructGrid(city: str, res: float, layers: int) -> GridLSH:
             R_MAX_LON,
             res,
             layers,
-            ROME_META_TEST,
-            ROME_CHOSEN_DATA,
+            meta_file,
+            chosen_data,
         )
     elif city.lower() == "kolumbus":
         return GridLSH(
@@ -148,8 +150,8 @@ def _constructGrid(city: str, res: float, layers: int) -> GridLSH:
             K_MAX_LON,
             res,
             layers,
-            KOLUMBUS_META_TEST,
-            KOLUMBUS_CHOSEN_DATA,
+            meta_file,
+            chosen_data,
         )
     else:
         raise ValueError(f"City/dataset argument {city} not supported")
@@ -286,6 +288,154 @@ def plot_grid_res_layers(
     # Dynamic y-axis limits based on values
     # ax2.set_ylim([0, ax2.get_ylim()[1] * 2])
     ax2.set_ylim([0.0, 0.1])
+    ax1.tick_params(axis="both", which="major", labelsize=16)
+    ax2.tick_params(axis="both", which="major", labelsize=16)
+
+    plt.show()
+
+
+def _compute_grid_sizes(
+    city: str,
+    layer: int,
+    resolution: float,
+    measure: str = "dtw",
+    reference: str = "dtw",
+    sizes: list[int] = [],
+):
+    """"""
+
+    def get_meta_file(city: str, size: int) -> str:
+        if city.lower() == "porto":
+            return f"../{PORTO_OUTPUT_FOLDER}/META-{size}.txt"
+        elif city.lower() == "rome":
+            return f"../{ROME_OUTPUT_FOLDER}/META-{size}.txt"
+        elif city.lower() == "kolumbus":
+            return f"../{KOLUMBUS_OUTPUT_FOLDER}/META-{size}.txt"
+
+    def get_correlation():
+
+        return corr
+
+    OUTPUT_FOLDER = None
+    CHOSEN_DATA = None
+    if city.lower() == "porto":
+        OUTPUT_FOLDER = SIMILARITIES_OUTPUT_FOLDER_PORTO
+        CHOSEN_DATA = PORTO_CHOSEN_DATA
+    elif city.lower() == "rome":
+        OUTPUT_FOLDER = SIMILARITIES_OUTPUT_FOLDER_ROME
+        CHOSEN_DATA = ROME_CHOSEN_DATA
+    elif city.lower() == "kolumbus":
+        OUTPUT_FOLDER = SIMILARITIES_OUTPUT_FOLDER_KOLUMBUS
+        CHOSEN_DATA = KOLUMBUS_CHOSEN_DATA
+
+    results = []
+    for dataset_size in sizes:
+        Grid = _constructGrid(
+            city,
+            resolution,
+            layer,
+            meta_file=get_meta_file(city=city, size=dataset_size),
+            chosen_data=CHOSEN_DATA,
+        )
+        hashes = Grid.compute_dataset_hashes()
+        hashed_similarity = compute_hash_similarity(
+            hashes=hashes, scheme="grid", measure=measure, parallel=False
+        )
+        hashed_array = _mirrorDiagonal(hashed_similarity).flatten()
+
+        true_sim_array = _mirrorDiagonal(
+            pd.read_csv(
+                f"../{OUTPUT_FOLDER}/{city.lower()}-{reference}-{dataset_size}.csv",
+                index_col=0,
+            )
+        ).flatten()
+        print("Size: ", dataset_size)
+        correlations = np.corrcoef(hashed_array, true_sim_array)[0][1]
+        print("Correlations: ", correlations)
+        corr = np.average(np.array(correlations))
+        std = np.std(np.array(correlations))
+        results.append([corr, resolution, std, dataset_size])
+    print(results)
+    return results
+
+
+def plot_grid_sizes(
+    city: str,
+    layer: int,
+    sizes: list[int],
+    resolution: float,
+    measure: str = "dtw",
+    reference: str = "dtw",
+):
+    """Visualises the 'optimal' values for resolution and layers for the grid hashes
+
+    Param
+    ---
+    # TODO: fill in
+    """
+
+    results = _compute_grid_sizes(
+        city=city,
+        layer=layer,
+        resolution=resolution,
+        measure=measure,
+        reference=reference,
+        sizes=sizes,
+    )
+
+    fig, ax1 = plt.subplots(figsize=(10, 8), dpi=300)
+    ax2 = ax1.twinx()
+    # fig.set_size_inches(10,8)
+    cmap = plt.get_cmap("gist_ncar")
+    N = len(results)
+
+    for element in results:
+
+        corre, res, std, dataset_size = element
+        print(corre, res, std, dataset_size)
+        corre = np.array(corre)
+        res = np.array(res)
+        std = np.array(std)
+        color = COLOR_MAP[layer]
+        ax1.plot(
+            res,
+            corre,
+            c=color,
+            label=f"{layer} layers",
+            lw=2,
+        )
+        ax2.plot(res, std, c=color, alpha=0.3, ls="dashed")
+        # plt.fill_between(res, np.array(corre)+np.array(std), np.array(corre)-np.array(std))
+
+    # Now styling the figure
+    ax1.legend(
+        loc="lower right",
+        ncols=5,
+        fontsize=16,
+        labelspacing=0.2,
+        borderpad=0.2,
+        handlelength=1,
+        handletextpad=0.5,
+        borderaxespad=0.2,
+        columnspacing=1,
+    )
+    ax2.text(
+        0.99,
+        0.99,
+        f"{city.capitalize()}: {measure.upper()} (Grid) - {reference.upper()} True\nSize: {str(sizes)}\n ",
+        ha="right",
+        va="top",
+        transform=ax2.transAxes,
+        fontsize=12,
+        color="black",
+    )
+    ax1.set_xlabel("Number of trajectories", fontsize=18)
+    ax1.set_ylabel("Pearson correlation coefficient - Solid lines", fontsize=18)
+    ax2.set_ylabel("Standard deviation - Dashed lines", fontsize=16)
+    ax1.set_ylim([0, 1.0])
+    # Dynamic y-axis limits based on values
+    ax2.set_ylim([0, ax2.get_ylim()[1] * 2])
+    ax2.set_xlim([sizes[0], sizes[-1]])
     ax1.tick_params(axis="both", which="major", labelsize=16)
     ax2.tick_params(axis="both", which="major", labelsize=16)
 
