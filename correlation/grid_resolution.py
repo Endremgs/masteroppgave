@@ -373,7 +373,6 @@ def _compute_grid_sizes(
         corr = np.average(np.array(corrs))
         std = np.std(np.array(corrs))
         results.append([corr, resolution, std, size, city])
-    print("Results: ", results)
     return results
 
 
@@ -400,7 +399,7 @@ def plot_grid_sizes(
             parallel_jobs=parallel_jobs,
         )
         all_results.append(results)
-    print("All results: ", all_results)
+    # print("All results: ", all_results)
 
     fig, ax1 = plt.subplots(figsize=(10, 8), dpi=300)
     ax2 = ax1.twinx()
@@ -420,7 +419,7 @@ def plot_grid_sizes(
             label=f"{city.upper()}",
             lw=2,
         )
-        ax2.plot(sizes, stds, c="red", alpha=0.3, ls="dashed")
+        ax2.plot(sizes, stds, c=COLOR_MAP_DATASET[city], alpha=0.3, ls="dashed")
 
     # Now styling the figure
     ax1.legend(
@@ -437,7 +436,7 @@ def plot_grid_sizes(
     ax2.text(
         0.99,
         0.99,
-        f"{datasets}: {measure.upper()} (Grid) - {reference.upper()} True\nSize: {str(sizes)}\nRes: {str(resolution)} km\nLayers: {layer} ",
+        f"{datasets}: {measure.upper()} (Grid) - {reference.upper()} True\nSubsets: {str(sizes)}\nRes: {str(resolution)} km\nLayers: {layer} ",
         ha="right",
         va="top",
         transform=ax2.transAxes,
