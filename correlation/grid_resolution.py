@@ -178,7 +178,7 @@ def _compute_grid_res_layers(
     resolution: list[float],
     measure: str = "py_dtw_manhattan",
     reference: str = "dtw",
-    parallell_jobs: int = 20,
+    parallel_jobs: int = 20,
 ):
     """Computations for the visualisation"""
 
@@ -194,7 +194,7 @@ def _compute_grid_res_layers(
             # corr = np.corrcoef(edits, REFERENCE[city.lower()+reference.lower()])[0][1]
             corrs = pool.map(
                 _fun_wrapper_corr,
-                [(city, res, lay, measure, reference) for _ in range(parallell_jobs)],
+                [(city, res, lay, measure, reference) for _ in range(parallel_jobs)],
             )
             corr = np.average(np.array(corrs))
             std = np.std(np.array(corrs))
@@ -294,6 +294,51 @@ def plot_grid_res_layers(
     plt.show()
 
 
+def get_meta_file(city: str, size: int) -> str:
+    if city.lower() == "porto":
+        return f"../{PORTO_OUTPUT_FOLDER}/META-{size}.txt"
+    elif city.lower() == "rome":
+        return f"../{ROME_OUTPUT_FOLDER}/META-{size}.txt"
+    elif city.lower() == "kolumbus":
+        return f"../{KOLUMBUS_OUTPUT_FOLDER}/META-{size}.txt"
+
+
+def get_folder_paths(city: str) -> tuple:
+    if city.lower() == "porto":
+        return SIMILARITIES_OUTPUT_FOLDER_PORTO, PORTO_CHOSEN_DATA
+    elif city.lower() == "rome":
+        return SIMILARITIES_OUTPUT_FOLDER_ROME, ROME_CHOSEN_DATA
+    elif city.lower() == "kolumbus":
+        return SIMILARITIES_OUTPUT_FOLDER_KOLUMBUS, KOLUMBUS_CHOSEN_DATA
+
+
+def _fun_wrapper_corr_sizes(args):
+    city, res, lay, measure, reference, size = args
+    OUTPUT_FOLDER, CHOSEN_DATA = get_folder_paths(city)
+    Grid = _constructGrid(
+        city,
+        res,
+        lay,
+        meta_file=get_meta_file(city=city, size=size),
+        chosen_data=CHOSEN_DATA,
+    )
+    hashes = Grid.compute_dataset_hashes()
+
+    hashed_similarity = compute_hash_similarity(
+        hashes=hashes, scheme="grid", measure=measure, parallel=False
+    )
+
+    hashed_array = _mirrorDiagonal(hashed_similarity).flatten()
+    true_sim_array = _mirrorDiagonal(
+        pd.read_csv(
+            f"../{OUTPUT_FOLDER}/{city.lower()}-{reference}-{size}.csv",
+            index_col=0,
+        )
+    ).flatten()
+    corr = np.corrcoef(hashed_array, true_sim_array)[0][1]
+    return corr
+
+
 def _compute_grid_sizes(
     city: str,
     layer: int,
@@ -301,62 +346,55 @@ def _compute_grid_sizes(
     measure: str = "dtw",
     reference: str = "dtw",
     sizes: list[int] = [],
+    parallel_jobs: int = 10,
 ):
     """"""
-
-    def get_meta_file(city: str, size: int) -> str:
-        if city.lower() == "porto":
-            return f"../{PORTO_OUTPUT_FOLDER}/META-{size}.txt"
-        elif city.lower() == "rome":
-            return f"../{ROME_OUTPUT_FOLDER}/META-{size}.txt"
-        elif city.lower() == "kolumbus":
-            return f"../{KOLUMBUS_OUTPUT_FOLDER}/META-{size}.txt"
-
-    def get_correlation():
-
-        return corr
-
-    OUTPUT_FOLDER = None
-    CHOSEN_DATA = None
-    if city.lower() == "porto":
-        OUTPUT_FOLDER = SIMILARITIES_OUTPUT_FOLDER_PORTO
-        CHOSEN_DATA = PORTO_CHOSEN_DATA
-    elif city.lower() == "rome":
-        OUTPUT_FOLDER = SIMILARITIES_OUTPUT_FOLDER_ROME
-        CHOSEN_DATA = ROME_CHOSEN_DATA
-    elif city.lower() == "kolumbus":
-        OUTPUT_FOLDER = SIMILARITIES_OUTPUT_FOLDER_KOLUMBUS
-        CHOSEN_DATA = KOLUMBUS_CHOSEN_DATA
+    pool = Pool()
 
     results = []
-    for dataset_size in sizes:
-        Grid = _constructGrid(
-            city,
-            resolution,
-            layer,
-            meta_file=get_meta_file(city=city, size=dataset_size),
-            chosen_data=CHOSEN_DATA,
+    for size in sizes:
+        corrs = pool.map(
+            _fun_wrapper_corr_sizes,
+            [
+                (city, resolution, layer, measure, reference, size)
+                for _ in range(parallel_jobs)
+            ],
         )
-        hashes = Grid.compute_dataset_hashes()
-        hashed_similarity = compute_hash_similarity(
-            hashes=hashes, scheme="grid", measure=measure, parallel=False
-        )
-        hashed_array = _mirrorDiagonal(hashed_similarity).flatten()
-
-        true_sim_array = _mirrorDiagonal(
-            pd.read_csv(
-                f"../{OUTPUT_FOLDER}/{city.lower()}-{reference}-{dataset_size}.csv",
-                index_col=0,
-            )
-        ).flatten()
-        print("Size: ", dataset_size)
-        correlations = np.corrcoef(hashed_array, true_sim_array)[0][1]
-        print("Correlations: ", correlations)
-        corr = np.average(np.array(correlations))
-        std = np.std(np.array(correlations))
-        results.append([corr, resolution, std, dataset_size])
-    print(results)
+        corr = np.average(np.array(corrs))
+        std = np.std(np.array(corrs))
+        print("Avg correlation: ", corr)
+        print("Standard deviation: ", std)
+        results.append([corr, resolution, std, size])
+    print("Results: ", results)
     return results
+
+    #     Grid = _constructGrid(
+    #         city,
+    #         resolution,
+    #         layer,
+    #         meta_file=get_meta_file(city=city, size=dataset_size),
+    #         chosen_data=CHOSEN_DATA,
+    #     )
+    #     hashes = Grid.compute_dataset_hashes()
+    #     hashed_similarity = compute_hash_similarity(
+    #         hashes=hashes, scheme="grid", measure=measure, parallel=False
+    #     )
+    #     hashed_array = _mirrorDiagonal(hashed_similarity).flatten()
+
+    #     true_sim_array = _mirrorDiagonal(
+    #         pd.read_csv(
+    #             f"../{OUTPUT_FOLDER}/{city.lower()}-{reference}-{dataset_size}.csv",
+    #             index_col=0,
+    #         )
+    #     ).flatten()
+    #     # print("Size: ", dataset_size)
+    #     correlations = np.corrcoef(hashed_array, true_sim_array)[0][1]
+    #     # print("Correlations: ", correlations)
+    #     corr = np.average(np.array(correlations))
+    #     std = np.std(np.array(correlations))
+    #     results.append([corr, resolution, std, dataset_size])
+    # # print(results)
+    # return results
 
 
 def plot_grid_sizes(
@@ -366,6 +404,7 @@ def plot_grid_sizes(
     resolution: float,
     measure: str = "dtw",
     reference: str = "dtw",
+    parallel_jobs: int = 10,
 ):
     """Visualises the 'optimal' values for resolution and layers for the grid hashes
 
@@ -381,6 +420,7 @@ def plot_grid_sizes(
         measure=measure,
         reference=reference,
         sizes=sizes,
+        parallel_jobs=parallel_jobs,
     )
 
     fig, ax1 = plt.subplots(figsize=(10, 8), dpi=300)
@@ -441,7 +481,7 @@ def plot_grid_sizes(
     ax1.set_ylim([0, 1.0])
     # Dynamic y-axis limits based on values
     ax2.set_ylim([0, ax2.get_ylim()[1] * 2])
-    ax2.set_xlim([sizes[0] - 100, sizes[-1] + 100])
+    ax2.set_xlim([0, sizes[-1] + 100])
     ax1.tick_params(axis="both", which="major", labelsize=16)
     ax2.tick_params(axis="both", which="major", labelsize=16)
 
