@@ -114,6 +114,24 @@ REFERENCE = {
 }
 
 
+def get_folder_paths(city: str) -> tuple:
+    if city.lower() == "porto":
+        return SIMILARITIES_OUTPUT_FOLDER_PORTO, PORTO_CHOSEN_DATA
+    elif city.lower() == "rome":
+        return SIMILARITIES_OUTPUT_FOLDER_ROME, ROME_CHOSEN_DATA
+    elif city.lower() == "kolumbus":
+        return SIMILARITIES_OUTPUT_FOLDER_KOLUMBUS, KOLUMBUS_CHOSEN_DATA
+
+
+def get_meta_file(city: str, size: int) -> str:
+    if city.lower() == "porto":
+        return f"../{PORTO_OUTPUT_FOLDER}/META-{size}.txt"
+    elif city.lower() == "rome":
+        return f"../{ROME_OUTPUT_FOLDER}/META-{size}.txt"
+    elif city.lower() == "kolumbus":
+        return f"../{KOLUMBUS_OUTPUT_FOLDER}/META-{size}.txt"
+
+
 def _constructGrid(
     city: str, res: float, layers: int, meta_file: str, chosen_data: str
 ) -> GridLSH:
@@ -159,8 +177,16 @@ def _constructGrid(
 
 
 def _fun_wrapper_corr(args):
-    city, res, lay, measure, reference = args
-    Grid = _constructGrid(city, res, lay)
+    city, res, lay, measure, reference, size = args
+
+    OUTPUT_FOLDER, CHOSEN_DATA = get_folder_paths(city)
+    Grid = _constructGrid(
+        city,
+        res,
+        lay,
+        meta_file=get_meta_file(city=city, size=size),
+        chosen_data=CHOSEN_DATA,
+    )
     hashes = Grid.compute_dataset_hashes()
 
     hashed_similarity = compute_hash_similarity(
@@ -184,18 +210,19 @@ def _compute_grid_res_layers(
     """Computations for the visualisation"""
 
     pool = Pool()
+    size = NUMBER_OF_TRAJECTORIES
 
     results = []
     for lay in layers:
         result = []
         for res in np.arange(*resolution):
             print(f"L: {lay}", "{:.2f}".format(res), end="\r")
-            # edits = _mirrorDiagonal(MEASURE[measure](hashes)).flatten()
-
-            # corr = np.corrcoef(edits, REFERENCE[city.lower()+reference.lower()])[0][1]
             corrs = pool.map(
                 _fun_wrapper_corr,
-                [(city, res, lay, measure, reference) for _ in range(parallel_jobs)],
+                [
+                    (city, res, lay, measure, reference, size)
+                    for _ in range(parallel_jobs)
+                ],
             )
             corr = np.average(np.array(corrs))
             std = np.std(np.array(corrs))
@@ -295,24 +322,6 @@ def plot_grid_res_layers(
     plt.show()
 
 
-def get_meta_file(city: str, size: int) -> str:
-    if city.lower() == "porto":
-        return f"../{PORTO_OUTPUT_FOLDER}/META-{size}.txt"
-    elif city.lower() == "rome":
-        return f"../{ROME_OUTPUT_FOLDER}/META-{size}.txt"
-    elif city.lower() == "kolumbus":
-        return f"../{KOLUMBUS_OUTPUT_FOLDER}/META-{size}.txt"
-
-
-def get_folder_paths(city: str) -> tuple:
-    if city.lower() == "porto":
-        return SIMILARITIES_OUTPUT_FOLDER_PORTO, PORTO_CHOSEN_DATA
-    elif city.lower() == "rome":
-        return SIMILARITIES_OUTPUT_FOLDER_ROME, ROME_CHOSEN_DATA
-    elif city.lower() == "kolumbus":
-        return SIMILARITIES_OUTPUT_FOLDER_KOLUMBUS, KOLUMBUS_CHOSEN_DATA
-
-
 def _fun_wrapper_corr_sizes(args):
     city, res, lay, measure, reference, size = args
     OUTPUT_FOLDER, CHOSEN_DATA = get_folder_paths(city)
@@ -363,8 +372,6 @@ def _compute_grid_sizes(
         )
         corr = np.average(np.array(corrs))
         std = np.std(np.array(corrs))
-        # print("Avg correlation: ", corr)
-        # print("Standard deviation: ", std)
         results.append([corr, resolution, std, size, city])
     print("Results: ", results)
     return results
@@ -378,12 +385,7 @@ def plot_grid_sizes(
     reference: str = "dtw",
     parallel_jobs: int = 10,
 ):
-    """Visualises the 'optimal' values for resolution and layers for the grid hashes
-
-    Param
-    ---
-    # TODO: fill in
-    """
+    """Visualises the correlation values based on various dataset sizes for all datasets with fixed grid and resolution"""
 
     all_results = []
     datasets = ["porto", "rome", "kolumbus"]
@@ -398,25 +400,12 @@ def plot_grid_sizes(
             parallel_jobs=parallel_jobs,
         )
         all_results.append(results)
-    # results = _compute_grid_sizes(
-    #     city=city,
-    #     layer=layer,
-    #     resolution=resolution,
-    #     measure=measure,
-    #     reference=reference,
-    #     sizes=sizes,
-    #     parallel_jobs=parallel_jobs,
-    # )
     print("All results: ", all_results)
 
     fig, ax1 = plt.subplots(figsize=(10, 8), dpi=300)
     ax2 = ax1.twinx()
-    # fig.set_size_inches(10,8)
     cmap = plt.get_cmap("gist_ncar")
     N = len(results)
-
-    # correlations = [element[0] for element in results]
-    # stds = [element[2] for element in results]
 
     for i in range(len(all_results)):
         correlations = [element[0] for element in all_results[i]]
@@ -448,7 +437,7 @@ def plot_grid_sizes(
     ax2.text(
         0.99,
         0.99,
-        f"{datasets}: {measure.upper()} (Grid) - {reference.upper()} True\nSize: {str(sizes)}\n ",
+        f"{datasets}: {measure.upper()} (Grid) - {reference.upper()} True\nSize: {str(sizes)}\nRes: {str(resolution)} km\nLayers: {layer} ",
         ha="right",
         va="top",
         transform=ax2.transAxes,
