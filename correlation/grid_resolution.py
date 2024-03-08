@@ -389,23 +389,29 @@ def plot_grid_sizes(
     cmap = plt.get_cmap("gist_ncar")
     N = len(results)
 
-    for element in results:
+    correlations = [element[0] for element in results]
+    ax1.plot(sizes, correlations, c=COLOR_MAP[layer], lw=2)
 
-        corre, res, std, dataset_size = element
-        print(corre, res, std, dataset_size)
-        corre = np.array(corre)
-        res = np.array(res)
-        std = np.array(std)
-        color = COLOR_MAP[layer]
-        ax1.plot(
-            res,
-            corre,
-            c=color,
-            label=f"{layer} layers",
-            lw=2,
-        )
-        ax2.plot(res, std, c=color, alpha=0.3, ls="dashed")
-        # plt.fill_between(res, np.array(corre)+np.array(std), np.array(corre)-np.array(std))
+    # for element in results:
+
+    #     corre, res, std, dataset_size = element
+    #     print(corre, res, std, dataset_size)
+    #     corre = np.array(corre)
+    #     res = np.array(res)
+    #     std = np.array(std)
+    #     color = COLOR_MAP[layer]
+    #     ax1.plot(
+    #         dataset_size,  # X-axis is the dataset size
+    #         corre,  # Y-axis is the correlation value
+    #         c=color,
+    #         label=f"{layer} layers",
+    #         marker="o",  # Adding a marker for each point
+    #         lw=2,
+    #     )
+    # ax2.plot(res, std, c=color, alpha=0.3, ls="dashed")
+    # plt.fill_between(
+    #     res, np.array(corre) + np.array(std), np.array(corre) - np.array(std)
+    # )
 
     # Now styling the figure
     ax1.legend(
@@ -435,7 +441,7 @@ def plot_grid_sizes(
     ax1.set_ylim([0, 1.0])
     # Dynamic y-axis limits based on values
     ax2.set_ylim([0, ax2.get_ylim()[1] * 2])
-    ax2.set_xlim([sizes[0], sizes[-1]])
+    ax2.set_xlim([sizes[0] - 100, sizes[-1] + 100])
     ax1.tick_params(axis="both", which="major", labelsize=16)
     ax2.tick_params(axis="both", which="major", labelsize=16)
 
