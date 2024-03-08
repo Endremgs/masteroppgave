@@ -21,6 +21,7 @@ from schemes.lsh_grid import GridLSH
 from utils.similarity_measures.distance import compute_hash_similarity
 
 from constants import (
+    COLOR_MAP_DATASET,
     PORTO_OUTPUT_FOLDER,
     ROME_OUTPUT_FOLDER,
     KOLUMBUS_OUTPUT_FOLDER,
@@ -362,43 +363,14 @@ def _compute_grid_sizes(
         )
         corr = np.average(np.array(corrs))
         std = np.std(np.array(corrs))
-        print("Avg correlation: ", corr)
-        print("Standard deviation: ", std)
-        results.append([corr, resolution, std, size])
+        # print("Avg correlation: ", corr)
+        # print("Standard deviation: ", std)
+        results.append([corr, resolution, std, size, city])
     print("Results: ", results)
     return results
 
-    #     Grid = _constructGrid(
-    #         city,
-    #         resolution,
-    #         layer,
-    #         meta_file=get_meta_file(city=city, size=dataset_size),
-    #         chosen_data=CHOSEN_DATA,
-    #     )
-    #     hashes = Grid.compute_dataset_hashes()
-    #     hashed_similarity = compute_hash_similarity(
-    #         hashes=hashes, scheme="grid", measure=measure, parallel=False
-    #     )
-    #     hashed_array = _mirrorDiagonal(hashed_similarity).flatten()
-
-    #     true_sim_array = _mirrorDiagonal(
-    #         pd.read_csv(
-    #             f"../{OUTPUT_FOLDER}/{city.lower()}-{reference}-{dataset_size}.csv",
-    #             index_col=0,
-    #         )
-    #     ).flatten()
-    #     # print("Size: ", dataset_size)
-    #     correlations = np.corrcoef(hashed_array, true_sim_array)[0][1]
-    #     # print("Correlations: ", correlations)
-    #     corr = np.average(np.array(correlations))
-    #     std = np.std(np.array(correlations))
-    #     results.append([corr, resolution, std, dataset_size])
-    # # print(results)
-    # return results
-
 
 def plot_grid_sizes(
-    city: str,
     layer: int,
     sizes: list[int],
     resolution: float,
@@ -413,15 +385,29 @@ def plot_grid_sizes(
     # TODO: fill in
     """
 
-    results = _compute_grid_sizes(
-        city=city,
-        layer=layer,
-        resolution=resolution,
-        measure=measure,
-        reference=reference,
-        sizes=sizes,
-        parallel_jobs=parallel_jobs,
-    )
+    all_results = []
+    datasets = ["porto", "rome", "kolumbus"]
+    for city in datasets:
+        results = _compute_grid_sizes(
+            city=city,
+            layer=layer,
+            resolution=resolution,
+            measure=measure,
+            reference=reference,
+            sizes=sizes,
+            parallel_jobs=parallel_jobs,
+        )
+        all_results.append(results)
+    # results = _compute_grid_sizes(
+    #     city=city,
+    #     layer=layer,
+    #     resolution=resolution,
+    #     measure=measure,
+    #     reference=reference,
+    #     sizes=sizes,
+    #     parallel_jobs=parallel_jobs,
+    # )
+    print("All results: ", all_results)
 
     fig, ax1 = plt.subplots(figsize=(10, 8), dpi=300)
     ax2 = ax1.twinx()
@@ -429,29 +415,23 @@ def plot_grid_sizes(
     cmap = plt.get_cmap("gist_ncar")
     N = len(results)
 
-    correlations = [element[0] for element in results]
-    ax1.plot(sizes, correlations, c=COLOR_MAP[layer], lw=2)
+    # correlations = [element[0] for element in results]
+    # stds = [element[2] for element in results]
 
-    # for element in results:
+    for i in range(len(all_results)):
+        correlations = [element[0] for element in all_results[i]]
+        stds = [element[2] for element in all_results[i]]
+        # sizes = [element[3] for element in dataset]
+        city = datasets[i]
 
-    #     corre, res, std, dataset_size = element
-    #     print(corre, res, std, dataset_size)
-    #     corre = np.array(corre)
-    #     res = np.array(res)
-    #     std = np.array(std)
-    #     color = COLOR_MAP[layer]
-    #     ax1.plot(
-    #         dataset_size,  # X-axis is the dataset size
-    #         corre,  # Y-axis is the correlation value
-    #         c=color,
-    #         label=f"{layer} layers",
-    #         marker="o",  # Adding a marker for each point
-    #         lw=2,
-    #     )
-    # ax2.plot(res, std, c=color, alpha=0.3, ls="dashed")
-    # plt.fill_between(
-    #     res, np.array(corre) + np.array(std), np.array(corre) - np.array(std)
-    # )
+        ax1.plot(
+            sizes,
+            correlations,
+            c=COLOR_MAP_DATASET[city],
+            label=f"{city.upper()}",
+            lw=2,
+        )
+        ax2.plot(sizes, stds, c="red", alpha=0.3, ls="dashed")
 
     # Now styling the figure
     ax1.legend(
@@ -468,7 +448,7 @@ def plot_grid_sizes(
     ax2.text(
         0.99,
         0.99,
-        f"{city.capitalize()}: {measure.upper()} (Grid) - {reference.upper()} True\nSize: {str(sizes)}\n ",
+        f"{datasets}: {measure.upper()} (Grid) - {reference.upper()} True\nSize: {str(sizes)}\n ",
         ha="right",
         va="top",
         transform=ax2.transAxes,
