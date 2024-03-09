@@ -363,6 +363,7 @@ def _compute_grid_sizes(
 
     results = []
     for size in sizes:
+        print(f"Size: {size} for {city}")
         corrs = pool.map(
             _fun_wrapper_corr_sizes,
             [
@@ -449,7 +450,7 @@ def plot_grid_sizes(
     ax1.set_ylim([0, 1.0])
     # Dynamic y-axis limits based on values
     ax2.set_ylim([0, ax2.get_ylim()[1] * 2])
-    ax2.set_xlim([0, sizes[-1] + 100])
+    ax2.set_xlim([sizes[0], sizes[-1]])
     ax1.tick_params(axis="both", which="major", labelsize=16)
     ax2.tick_params(axis="both", which="major", labelsize=16)
 
