@@ -105,3 +105,14 @@ def generate_grid_hash_similarity(
     )
 
     return similarities
+
+
+def generate_grid_hash_similarity_coordinates(
+    city: str, res: float, layers: int, measure: str = "dtw", size: int = 50
+) -> pd.DataFrame:
+    """Generates the full grid hash similarities and saves it as a dataframe"""
+
+    Grid = _constructGrid(city, res, layers, size)
+    hashes = Grid.compute_dataset_hashes()
+    grid_cells = Grid.grid
+    return hashes, grid_cells
