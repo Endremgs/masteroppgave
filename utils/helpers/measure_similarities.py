@@ -28,6 +28,9 @@ sim = {
     "disk_frechet_cy": hashed_frechet.measure_hashed_cy_frechet,
     "grid_dtw_cy": hashed_dtw.measure_hashed_cy_dtw,
     "grid_frechet_cy": hashed_frechet.measure_hashed_cy_frechet,
+    "true_dtw_py": dtw.measure_py_dtw,
+    "disk_dtw_py": hashed_dtw.measure_hashed_py_dtw,
+    "grid_dtw_py": hashed_dtw.measure_hashed_py_dtw,
 }
 
 
@@ -123,9 +126,17 @@ def compute_hashed_similarity_runtimes(
     data_sets = range(data_start_size, data_end_size + 1, data_step_size)
 
     output_folder = "../benchmarks/similarities_runtimes/"
-    if (measure == "disk_dtw_cy") or (measure == "disk_frechet_cy"):
+    if (
+        (measure == "disk_dtw_cy")
+        or (measure == "disk_frechet_cy")
+        or (measure == "disk_dtw_py")
+    ):
         file_name = f"similarity_runtimes_{measure}_layers-{layers}_diameter-{diameter}_disks-{disks}_{city}_start-{data_start_size}_end-{data_end_size}_step-{data_step_size}.csv"
-    elif (measure == "grid_dtw_cy") or (measure == "grid_frechet_cy"):
+    elif (
+        (measure == "grid_dtw_cy")
+        or (measure == "grid_frechet_cy")
+        or (measure == "grid_dtw_py")
+    ):
         file_name = f"similarity_runtimes_{measure}_layers-{layers}_res-{res}_{city}_start-{data_start_size}_end-{data_end_size}_step-{data_step_size}.csv"
 
     df = pd.DataFrame(
@@ -139,11 +150,19 @@ def compute_hashed_similarity_runtimes(
         print(f"Computing size {size}, set {index}/{len(data_sets)}", end="\r")
         with Pool(parallel_jobs) as pool:
             start_time = time.perf_counter()
-            if (measure == "disk_dtw_cy") or (measure == "disk_frechet_cy"):
+            if (
+                (measure == "disk_dtw_cy")
+                or (measure == "disk_frechet_cy")
+                or (measure == "disk_dtw_py")
+            ):
                 hashes = compute_disk_hashes(
                     city=city, diameter=diameter, layers=layers, disks=disks, size=size
                 )
-            elif (measure == "grid_dtw_cy") or (measure == "grid_frechet_cy"):
+            elif (
+                (measure == "grid_dtw_cy")
+                or (measure == "grid_frechet_cy")
+                or (measure == "grid_dtw_py")
+            ):
                 hashes = compute_grid_hashes(
                     city=city, res=res, layers=layers, size=size
                 )

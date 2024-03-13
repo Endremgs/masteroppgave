@@ -1,11 +1,58 @@
 import numpy as np
 import pandas as pd
 import collections as co
+from traj_dist.pydist.dtw import e_dtw as p_dtw
 from traj_dist.distance import dtw as c_dtw
 
 from multiprocessing import Pool
 import timeit as ti
 import time
+
+
+def py_dtw_hashes(hashes: dict[str, list[list[list[float]]]]) -> pd.DataFrame:
+    """
+    Method for computing DTW similarity between all layers of trajectories in a given dataset using python, and summing these similarities.
+
+    Params
+    ---
+    trajectories : dict[str, list[list[list[float]]]]
+        A dictionary containing the trajectories, where each key corresponds to multiple layers of trajectories.
+
+    Returns
+    ---
+    A nxn pandas dataframe containing the pairwise summed similarities - sorted alphabetically
+    """
+    sorted_trajectories = co.OrderedDict(sorted(hashes.items()))
+    num_trajectories = len(sorted_trajectories)
+
+    M = np.zeros((num_trajectories, num_trajectories))
+
+    for i, traj_i in enumerate(sorted_trajectories.keys()):
+        for j, traj_j in enumerate(sorted_trajectories.keys()):
+            total_dtw = 0  # Initialize total DTW similarity for this pair
+            for layer_i, layer_j in zip(
+                sorted_trajectories[traj_i], sorted_trajectories[traj_j]
+            ):
+                X = np.array(layer_i)
+                Y = np.array(layer_j)
+                # Ensure both X and Y are not empty and have the correct shape
+                # NOTE: If the calculation is skipped, either X or Y (or both) is empty.
+                # This usually occurs for comparisons starting on the second half of the trajectories for unknown reasons.
+                # We normally use sizes so big that the number of skipped comparisons can be neglected as it does not affect the correlation.
+                if X.size > 0 and Y.size > 0 and X.ndim == 2 and Y.ndim == 2:
+                    dtw = p_dtw(
+                        X, Y
+                    )  # Assuming c_dtw is defined elsewhere to calculate DTW similarity
+                    total_dtw += dtw
+            M[i, j] = total_dtw
+            if i == j:
+                break  # This optimizes by not recalculating for identical trajectories
+
+    df = pd.DataFrame(
+        M, index=sorted_trajectories.keys(), columns=sorted_trajectories.keys()
+    )
+
+    return df
 
 
 def cy_dtw_hashes(hashes: dict[str, list[list[list[float]]]]) -> pd.DataFrame:
@@ -114,5 +161,13 @@ def measure_hashed_cy_dtw(hashes: dict[str, list[list[list[float]]]]):
     """Method for measuring time efficiency using cy_dtw_hashes"""
     measures = ti.repeat(
         lambda: cy_dtw_hashes(hashes), number=1, repeat=1, timer=time.process_time
+    )
+    return measures
+
+
+def measure_hashed_py_dtw(hashes: dict[str, list[list[list[float]]]]):
+    """Method for measuring time efficiency using py_dtw_hashes"""
+    measures = ti.repeat(
+        lambda: py_dtw_hashes(hashes), number=1, repeat=1, timer=time.process_time
     )
     return measures
