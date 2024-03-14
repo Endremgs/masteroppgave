@@ -13,9 +13,11 @@ def save_current_trajectory(
         for coordinate in trajectory:
             counter += 1
             lat, lon = coordinate
-            if counter % 10 == 0:
+
+            if trajectory_file_prefix == "K" and counter % 5 == 0:
                 file.write("%s, %s\n" % (lat, lon))
-            # file.write("%s, %s\n" % (lat, lon))
+            elif trajectory_file_prefix == "R" or trajectory_file_prefix == "P":
+                file.write("%s, %s\n" % (lat, lon))
         file.close()
         return
 
