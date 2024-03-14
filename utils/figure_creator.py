@@ -107,7 +107,7 @@ def draw_hash_similarity_runtime_logarithmic(
     rd = reference_data.mean(axis=0)
     r_sizes = rd.index.to_numpy(int)
     r_runtimes = rd.values
-    ax.plot(r_sizes, r_runtimes, "or", markersize=8)
+    # ax.plot(r_sizes, r_runtimes, "or", markersize=8)
 
     degree = 10
     example_hash_timing_data = pd.read_csv(list(paths_hashes.keys())[0], index_col=0)
@@ -131,7 +131,7 @@ def draw_hash_similarity_runtime_logarithmic(
         hash_mean_timing = hash_timing_data.mean(axis=0)
         hash_data_sizes = hash_mean_timing.index.to_numpy(int)
         hash_data_runtimes = hash_mean_timing.values
-        ax.plot(hash_data_sizes, hash_data_runtimes, "xr", markersize=12)
+        # ax.plot(hash_data_sizes, hash_data_runtimes, "xr", markersize=12)
         # Degree kontrollerer nøyaktigheten til polynomet. Vil gjerne ha så lav som mulig for at kurven ikke skal gå så mye opp og ned, men samtidig så høyt at den representerer alle punktene riktig nok.
         degree = 9
         hash_coeffs = np.polyfit(hash_data_sizes, hash_data_runtimes, degree)
