@@ -271,12 +271,11 @@ def plot_grid_res_layers(
 
     for layer_element in results:
         corrs, layer = layer_element
-
         corre, res, std = list(zip(*corrs))
         corre = np.array(corre)
         res = np.array(res)
         std = np.array(std)
-        color = COLOR_MAP[layer]
+        color = COLOR_MAP[layer - 1]
         ax1.plot(
             res,
             corre,
