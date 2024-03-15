@@ -55,39 +55,62 @@ def compute_true_similarity_runtimes(
     data_start_size: int = 100,
     data_end_size: int = 1000,
     data_step_size: int = 100,
+    iterations: int = 3,
 ):
-
     data_folder = get_dataset_path(city)
-
-    """Writes the runtimes of the similarity measures to a csv file"""
     data_sets = range(data_start_size, data_end_size + 1, data_step_size)
     print("data_end_size", data_end_size)
     print("data sets", data_sets)
-
     output_folder = "../benchmarks/similarities_runtimes/"
     file_name = f"similarity_runtimes_{measure}_{city}_start-{data_start_size}_end-{data_end_size}_step-{data_step_size}.csv"
 
-    df = pd.DataFrame(
-        index=[f"run_{x+1}" for x in range(parallel_jobs)],
-        columns=[x for x in data_sets],
-    )
+    # Initialize a list to hold the DataFrames from each iteration
+    dfs_iterations = []
+
+    # Initialize an empty DataFrame to accumulate execution times
+    df_accumulated = pd.DataFrame()
     print(f"Computing {measure} for {city} with {parallel_jobs} jobs")
 
-    index = 1
-    for size in data_sets:
-        print(f"Computing size {size}, set {index}/{len(data_sets)}", end="\r")
-
-        meta_file = data_folder + f"META-{size}.txt"
-        execution_times = measure_true_similarities(
-            measure=measure,
-            data_folder=data_folder,
-            meta_file=meta_file,
-            parallel_jobs=parallel_jobs,
+    for iteration in range(iterations):  # Loop through each iteration
+        print(f"Iteration {iteration+1}/{iterations}")
+        df = pd.DataFrame(
+            index=[f"run_{x+1}" for x in range(parallel_jobs)],
+            columns=[x for x in data_sets],
         )
-        df[size] = [element[0] for element in execution_times]
-        index += 1
-    df.to_csv(os.path.join(output_folder, file_name))
-    print(df)
+
+        index = 1
+        for size in data_sets:
+            print(f"Computing size {size}, set {index}/{len(data_sets)}", end="\r")
+            meta_file = data_folder + f"META-{size}.txt"
+            execution_times = measure_true_similarities(
+                measure=measure,
+                data_folder=data_folder,
+                meta_file=meta_file,
+                parallel_jobs=parallel_jobs,
+            )
+            df[size] = [element[0] for element in execution_times]
+            index += 1
+        # Append the DataFrame of this iteration to the list
+        dfs_iterations.append(df)
+
+        # Accumulate the results from this iteration
+        if df_accumulated.empty:
+            df_accumulated = df.copy()
+        else:
+            df_accumulated += df
+
+    # Calculate the average execution times over all iterations
+    df_average = pd.concat(dfs_iterations).groupby(level=0).mean()
+
+    # Print the runtimes of each iteration for comparison
+    for i, df_iteration in enumerate(dfs_iterations, 1):
+        print(f"\nRuntimes - Iteration {i}:")
+        print(df_iteration)
+
+    print("\nAverage Runtimes:")
+    print(df_average)
+    # Optionally, save the average execution times to a CSV file
+    df_average.to_csv(os.path.join(output_folder, file_name))
 
 
 def measure_hashed_similarities(args):
@@ -121,69 +144,111 @@ def compute_hashed_similarity_runtimes(
     data_start_size: int = 100,
     data_end_size: int = 1000,
     data_step_size: int = 100,
+    iterations: int = 3,  # New parameter for specifying the number of iterations
 ):
-    """Writes the runtimes of the similarity measures to a csv file"""
     data_sets = range(data_start_size, data_end_size + 1, data_step_size)
-
     output_folder = "../benchmarks/similarities_runtimes/"
-    if (
-        (measure == "disk_dtw_cy")
-        or (measure == "disk_frechet_cy")
-        or (measure == "disk_dtw_py")
-    ):
+
+    # Adjust file_name generation based on measure
+    if measure in ["disk_dtw_cy", "disk_frechet_cy", "disk_dtw_py"]:
         file_name = f"similarity_runtimes_{measure}_layers-{layers}_diameter-{diameter}_disks-{disks}_{city}_start-{data_start_size}_end-{data_end_size}_step-{data_step_size}.csv"
-    elif (
-        (measure == "grid_dtw_cy")
-        or (measure == "grid_frechet_cy")
-        or (measure == "grid_dtw_py")
-    ):
+    elif measure in ["grid_dtw_cy", "grid_frechet_cy", "grid_dtw_py"]:
         file_name = f"similarity_runtimes_{measure}_layers-{layers}_res-{res}_{city}_start-{data_start_size}_end-{data_end_size}_step-{data_step_size}.csv"
 
-    df = pd.DataFrame(
-        index=[f"run_{x+1}" for x in range(parallel_jobs)],
-        columns=[x for x in data_sets],
-    )
-    print(f"Computing {measure} for {city} with {parallel_jobs} jobs")
-    index = 1
-    for size in data_sets:
-        elapsed_time_for_hash_generation = 0
-        print(f"Computing size {size}, set {index}/{len(data_sets)}", end="\r")
-        with Pool(parallel_jobs) as pool:
-            start_time = time.perf_counter()
-            if (
-                (measure == "disk_dtw_cy")
-                or (measure == "disk_frechet_cy")
-                or (measure == "disk_dtw_py")
-            ):
-                hashes = compute_disk_hashes(
-                    city=city, diameter=diameter, layers=layers, disks=disks, size=size
-                )
-            elif (
-                (measure == "grid_dtw_cy")
-                or (measure == "grid_frechet_cy")
-                or (measure == "grid_dtw_py")
-            ):
-                hashes = compute_grid_hashes(
-                    city=city, res=res, layers=layers, size=size
-                )
-            else:
-                raise ValueError("Invalid measure")
-            end_time = time.perf_counter()
-            elapsed_time_for_hash_generation += end_time - start_time
-            # Print average length of keys in hashes
-            # print(
-            #     f"Average length of keys in hashes: {sum([len(hashes[key][0]) for key in hashes])/len(hashes)}"
-            # )
-            execution_times = pool.map(
-                sim[measure], [hashes for _ in range(parallel_jobs)]
-            )
-        df[size] = [element[0] for element in execution_times]
-        index += 1
-        print(
-            f"Elapsed time for hash generation in set {size}: {elapsed_time_for_hash_generation}"
+    # Initialize a list to hold the DataFrames from each iteration
+    dfs_iterations = []
+    hash_generation_times = {size: [] for size in data_sets}
+
+    # Initialize an empty DataFrame to accumulate execution times
+    df_accumulated = pd.DataFrame()
+
+    for iteration in range(iterations):  # Loop through each iteration
+        print(f"Iteration {iteration+1}/{iterations}")
+        df = pd.DataFrame(
+            index=[f"run_{x+1}" for x in range(parallel_jobs)],
+            columns=[x for x in data_sets],
         )
-    df.to_csv(os.path.join(output_folder, file_name))
-    print(df)
+
+        print(
+            f"Computing {measure} for {city} with {parallel_jobs} jobs - Iteration {iteration+1}/{iterations}"
+        )
+        index = 1
+
+        for size in data_sets:
+            elapsed_time_for_hash_generation = 0
+            print(f"Computing size {size}, set {index}/{len(data_sets)}", end="\r")
+            with Pool(parallel_jobs) as pool:
+                start_time = time.perf_counter()
+                if measure in ["disk_dtw_cy", "disk_frechet_cy", "disk_dtw_py"]:
+                    hashes = compute_disk_hashes(
+                        city=city,
+                        diameter=diameter,
+                        layers=layers,
+                        disks=disks,
+                        size=size,
+                    )
+                elif measure in ["grid_dtw_cy", "grid_frechet_cy", "grid_dtw_py"]:
+                    hashes = compute_grid_hashes(
+                        city=city, res=res, layers=layers, size=size
+                    )
+                else:
+                    raise ValueError("Invalid measure")
+                end_time = time.perf_counter()
+                elapsed_time_for_hash_generation += end_time - start_time
+
+                hash_generation_times[size].append(elapsed_time_for_hash_generation)
+
+                execution_times = pool.map(
+                    sim[measure], [hashes for _ in range(parallel_jobs)]
+                )
+
+            df[size] = [element[0] for element in execution_times]
+            index += 1
+        # Append the DataFrame of this iteration to the list
+        dfs_iterations.append(df)
+        # Accumulate the results from this iteration
+        if df_accumulated.empty:
+            df_accumulated = df.copy()
+        else:
+            df_accumulated += df
+
+    # Calculate the average execution times over all iterations
+    # df_average = df_accumulated / iterations
+
+    # Calculate the average execution times over all iterations
+    df_average = pd.concat(dfs_iterations).groupby(level=0).mean()
+
+    # Print the runtimes of each iteration for comparison
+    for i, df_iteration in enumerate(dfs_iterations, 1):
+        print(f"\nRuntimes - Iteration {i}:")
+        print(df_iteration)
+
+    # Print the average hash generation time for each dataset size
+    print("\nAverage Hash Generation Times:")
+    for size in data_sets:
+        average_time = sum(hash_generation_times[size]) / len(
+            hash_generation_times[size]
+        )
+        print(f"Size {size}: {average_time:.4f} seconds")
+
+    print("\nAverage Runtimes:")
+    print(df_average)
+
+    df_average.to_csv(os.path.join(output_folder, file_name))
+    hash_generation_file_name = file_name.replace(
+        "similarity_runtimes", "hash_generation"
+    )
+    hash_generation_df = pd.DataFrame(
+        {
+            "Dataset Size": list(hash_generation_times.keys()),
+            "Average Hash Generation Time (seconds)": [
+                sum(times) / len(times) for times in hash_generation_times.values()
+            ],
+        }
+    )
+    hash_generation_df.to_csv(
+        os.path.join(output_folder, hash_generation_file_name), index=False
+    )
 
 
 def compute_grid_similarity_runtimes(
@@ -195,6 +260,7 @@ def compute_grid_similarity_runtimes(
     data_start_size: int = 100,
     data_end_size: int = 1000,
     data_step_size: int = 100,
+    iterations: int = 3,
 ):
     compute_hashed_similarity_runtimes(
         measure=measure,
@@ -205,6 +271,7 @@ def compute_grid_similarity_runtimes(
         data_start_size=data_start_size,
         data_end_size=data_end_size,
         data_step_size=data_step_size,
+        iterations=iterations,
     )
 
 
@@ -218,6 +285,7 @@ def compute_disk_similarity_runtimes(
     data_start_size: int = 100,
     data_end_size: int = 1000,
     data_step_size: int = 100,
+    iterations: int = 3,
 ):
     compute_hashed_similarity_runtimes(
         measure=measure,
@@ -229,4 +297,5 @@ def compute_disk_similarity_runtimes(
         data_start_size=data_start_size,
         data_end_size=data_end_size,
         data_step_size=data_step_size,
+        iterations=iterations,
     )
