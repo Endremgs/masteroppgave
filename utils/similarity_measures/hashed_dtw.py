@@ -73,8 +73,8 @@ def cy_dtw_hashes(hashes: dict[str, list[list[list[float]]]]) -> pd.DataFrame:
 
     M = np.zeros((num_trajectories, num_trajectories))
 
-    # total_comparisons = 0
-    # total_skipped_comparisons = 0
+    total_comparisons = 0
+    total_skipped_comparisons = 0
 
     for i, traj_i in enumerate(sorted_trajectories.keys()):
         for j, traj_j in enumerate(sorted_trajectories.keys()):
@@ -84,6 +84,7 @@ def cy_dtw_hashes(hashes: dict[str, list[list[list[float]]]]) -> pd.DataFrame:
             ):
                 X = np.array(layer_i)
                 Y = np.array(layer_j)
+                total_comparisons += 1
                 # Ensure both X and Y are not empty and have the correct shape
                 # NOTE: If the calculation is skipped, either X or Y (or both) is empty.
                 # This usually occurs for comparisons starting on the second half of the trajectories for unknown reasons.
@@ -93,6 +94,8 @@ def cy_dtw_hashes(hashes: dict[str, list[list[list[float]]]]) -> pd.DataFrame:
                         X, Y
                     )  # Assuming c_dtw is defined elsewhere to calculate DTW similarity
                     total_dtw += dtw
+                else:
+                    total_skipped_comparisons += 1
             M[i, j] = total_dtw
             if i == j:
                 break  # This optimizes by not recalculating for identical trajectories
@@ -104,7 +107,7 @@ def cy_dtw_hashes(hashes: dict[str, list[list[list[float]]]]) -> pd.DataFrame:
         M, index=sorted_trajectories.keys(), columns=sorted_trajectories.keys()
     )
 
-    return df
+    return df, total_comparisons, total_skipped_comparisons
 
 
 def _fun_wrapper_hashes(args):

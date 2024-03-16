@@ -510,30 +510,32 @@ def plot_disk_sizes(
 def _fun_wrapper_corr_disks(args):
     city, dia, lay, disks, measure, reference = args
     OUTPUT_FOLDER, CHOSEN_DATA = get_folder_paths(city)
-    print(f"DN: {disks}", end="\r")
+    DATASET_SIZE = 100
     Disk = _constructDisk(
         city,
         dia,
         lay,
         disks,
-        meta_file=get_meta_file(city, disks),
+        meta_file=get_meta_file(city, DATASET_SIZE),
         chosen_data=CHOSEN_DATA,
     )
     hashes = _compute_hashes(Disk, measure)
 
-    hashed_similarity = compute_hash_similarity(
-        hashes=hashes, scheme="disk", measure=measure, parallel=False
+    hashed_similarity, total_comparisons, total_skipped_comparisons = (
+        compute_hash_similarity(
+            hashes=hashes, scheme="disk", measure=measure, parallel=False
+        )
     )
     hashed_array = _mirrorDiagonal(hashed_similarity).flatten()
     true_sim_array = _mirrorDiagonal(
         pd.read_csv(
-            f"../{OUTPUT_FOLDER}/{city.lower()}-{reference}-{disks}.csv",
+            f"../{OUTPUT_FOLDER}/{city.lower()}-{reference}-{DATASET_SIZE}.csv",
             index_col=0,
         )
     ).flatten()
     # true_sim_array = REFERENCE[city.lower() + reference.lower()]
     corr = np.corrcoef(hashed_array, true_sim_array)[0][1]
-    return corr
+    return corr, total_comparisons, total_skipped_comparisons
 
 
 def _compute_disk_numbers(
@@ -552,13 +554,22 @@ def _compute_disk_numbers(
     results = []
 
     for disk_number in disks:
-        print(f"DN: {disk_number}", end="\r")
-        corrs = pool.map(
+        # print(f"DN: {disk_number}", end="\r")
+        corrs_details = pool.map(
             _fun_wrapper_corr_disks,
             [
                 (city, diameter, layers, disk_number, measure, reference)
                 for _ in range(parallell_jobs)
             ],
+        )
+        corrs, total_comparisons, total_skipped_comparisons = zip(*corrs_details)
+
+        total_comparisons_sum = sum(total_comparisons)
+        skipped_comparisons_sum = sum(total_skipped_comparisons)
+        percentage_skipped = (skipped_comparisons_sum / total_comparisons_sum) * 100
+
+        print(
+            f"Skipped comparisons for disk number {disk_number}: {percentage_skipped:.2f}%"
         )
         corr = np.average(np.array(corrs))
         std = np.std(np.array(corrs))
@@ -617,9 +628,9 @@ def plot_disk_numbers(
     # Now styling the figure
     # ax1.legend(loc="lower left", ncols=3)
     ax2.text(
+        0.37,
         0.99,
-        0.99,
-        f"{city.capitalize()}: {measure.upper()} (Disk) - {reference.upper()} True",
+        f"{city.capitalize()}: {measure.upper()} (Disk) - {reference.upper()} True\nLayers: {layers} Diameter: {diameter} km\nSize: {NUMBER_OF_TRAJECTORIES}",
         ha="right",
         va="top",
         transform=ax2.transAxes,
