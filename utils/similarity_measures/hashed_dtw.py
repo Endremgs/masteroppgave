@@ -107,7 +107,10 @@ def cy_dtw_hashes(hashes: dict[str, list[list[list[float]]]]) -> pd.DataFrame:
         M, index=sorted_trajectories.keys(), columns=sorted_trajectories.keys()
     )
 
-    return df, total_comparisons, total_skipped_comparisons
+    # Return this when checking correlation based on various number of disks
+    # used by _fun_wrapper_corr_disks
+    # return df, total_comparisons, total_skipped_comparisons
+    return df
 
 
 def _fun_wrapper_hashes(args):
