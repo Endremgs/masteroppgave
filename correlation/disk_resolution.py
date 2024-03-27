@@ -86,36 +86,52 @@ K_DTW = _mirrorDiagonal(
         index_col=0,
     )
 ).flatten()
-P_FRE = _mirrorDiagonal(
-    pd.read_csv(
-        f"../{SIMILARITIES_OUTPUT_FOLDER_PORTO}/porto-frechet-{NUMBER_OF_TRAJECTORIES}.csv",
-        index_col=0,
-    )
-).flatten()
-R_FRE = _mirrorDiagonal(
-    pd.read_csv(
-        f"../{SIMILARITIES_OUTPUT_FOLDER_ROME}/rome-frechet-{NUMBER_OF_TRAJECTORIES}.csv",
-        index_col=0,
-    )
-).flatten()
-K_FRE = _mirrorDiagonal(
-    pd.read_csv(
-        f"../{SIMILARITIES_OUTPUT_FOLDER_KOLUMBUS}/kolumbus-frechet-{NUMBER_OF_TRAJECTORIES}.csv",
-        index_col=0,
-    )
-).flatten()
+# P_FRE = _mirrorDiagonal(
+#     pd.read_csv(
+#         f"../{SIMILARITIES_OUTPUT_FOLDER_PORTO}/porto-frechet-{NUMBER_OF_TRAJECTORIES}.csv",
+#         index_col=0,
+#     )
+# ).flatten()
+# R_FRE = _mirrorDiagonal(
+#     pd.read_csv(
+#         f"../{SIMILARITIES_OUTPUT_FOLDER_ROME}/rome-frechet-{NUMBER_OF_TRAJECTORIES}.csv",
+#         index_col=0,
+#     )
+# ).flatten()
+# K_FRE = _mirrorDiagonal(
+#     pd.read_csv(
+#         f"../{SIMILARITIES_OUTPUT_FOLDER_KOLUMBUS}/kolumbus-frechet-{NUMBER_OF_TRAJECTORIES}.csv",
+#         index_col=0,
+#     )
+# ).flatten()
 NULL_TEST_CSV = _mirrorDiagonal(
     pd.read_csv("../benchmarks/true_similarities/null-testset.csv", index_col=0)
+).flatten()
+
+BUCKET_TEST_CSV_DISK_ROME = _mirrorDiagonal(
+    pd.read_csv(
+        "../hashed_similarities/similarity_values/disk/rome/disk_rome-dtw.csv",
+        index_col=0,
+    )
+).flatten()
+
+BUCKET_TEST_CSV_DISK_ROME_ORIGINAL = _mirrorDiagonal(
+    pd.read_csv(
+        "../hashed_similarities/similarity_values/disk/rome/disk_rome-dtw_original.csv",
+        index_col=0,
+    )
 ).flatten()
 
 REFERENCE = {
     "portodtw": P_DTW,
     "romedtw": R_DTW,
     "kolumbusdtw": K_DTW,
-    "portofrechet": P_FRE,
-    "romefrechet": R_FRE,
-    "kolumbusfrechet": K_FRE,
+    # "portofrechet": P_FRE,
+    # "romefrechet": R_FRE,
+    # "kolumbusfrechet": K_FRE,
     "null_testset": NULL_TEST_CSV,
+    "bucket_disk_rome": BUCKET_TEST_CSV_DISK_ROME,
+    "bucket_disk_rome_original": BUCKET_TEST_CSV_DISK_ROME_ORIGINAL,
 }
 
 
@@ -219,21 +235,40 @@ def _fun_wrapper_corr(args):
 
 
 # Used in the next method to verify the correlation methods
-# def _test_wrapper_corr(args):
-#     city, dia, lay, measure, reference = args
-#     Disk = _constructDisk(city, dia, lay)
-#     hashes = _compute_hashes(Disk, measure)
-#     hash_array = _mirrorDiagonal(MEASURE[measure](hashes)).flatten()
-#     truesim_array_dtw = REFERENCE[city.lower() + "dtw"]
-#     truesim_array_frechet = REFERENCE[city.lower() + "frechet"]
-#     null_values = REFERENCE["null_testset"]
-#     # spearman_corr = scipy.stats.spearmanr(hash_array, truesim_array_dtw)
-#     # print("Spearman_corr", spearman_corr)
-#     # kendall_corr = scipy.stats.kendalltau(hash_array, truesim_array_dtw)
-#     # print("Kendall_corr", kendall_corr)
+def _test_wrapper_corr(args):
+    city, dia, lay, measure, reference = args
+    Disk = _constructDisk(city, dia, lay)
+    # hashes = _compute_hashes(Disk, measure)
+    # hash_array = _mirrorDiagonal(measure(hashes)).flatten()
+    truesim_array_dtw = REFERENCE[city.lower() + "dtw"]
+    # truesim_array_frechet = REFERENCE[city.lower() + "frechet"]
+    # null_values = REFERENCE["null_testset"]
+    edited_test_csv = REFERENCE["bucket_disk_rome"]
+    # spearman_corr = scipy.stats.spearmanr(hash_array, truesim_array_dtw)
+    # print("Spearman_corr", spearman_corr)
+    # kendall_corr = scipy.stats.kendalltau(hash_array, truesim_array_dtw)
+    # print("Kendall_corr", kendall_corr)
 
-#     test_corr = np.corrcoef(hash_array, truesim_array_dtw)[0][1]
-#     return test_corr
+    test_corr = np.corrcoef(edited_test_csv, truesim_array_dtw)[0][1]
+    return test_corr
+
+
+def run_bucket_test():
+    truesim_array_dtw = REFERENCE["rome".lower() + "dtw"]
+    edited_test_csv = REFERENCE["bucket_disk_rome"]
+    original_test_csv = REFERENCE["bucket_disk_rome_original"]
+    # spearman_corr = scipy.stats.spearmanr(hash_array, truesim_array_dtw)
+    # print("Spearman_corr", spearman_corr)
+    # kendall_corr = scipy.stats.kendalltau(hash_array, truesim_array_dtw)
+    # print("Kendall_corr", kendall_corr)
+
+    test_corr_bucket = np.corrcoef(edited_test_csv, truesim_array_dtw)[0][1]
+    test_corr = np.corrcoef(original_test_csv, truesim_array_dtw)[0][1]
+
+    print("Bucket test corr  ", test_corr_bucket)
+    print("Original test corr", test_corr)
+
+    # return test_corr
 
 
 def _compute_disk_diameter_layers(
@@ -255,20 +290,20 @@ def _compute_disk_diameter_layers(
         result = []
         for dia in np.arange(*diameter):
             print(f"L: {lay}", "{:.2f}".format(dia), end="\r")
-            corrs = pool.map(
-                _fun_wrapper_corr,
-                [
-                    (city, dia, lay, disks, measure, reference, size)
-                    for _ in range(parallel_jobs)
-                ],
-            )
+            # corrs = pool.map(
+            #     _fun_wrapper_corr,
+            #     [
+            #         (city, dia, lay, disks, measure, reference, size)
+            #         for _ in range(parallel_jobs)
+            #     ],
+            # )
 
             # NOTE: The below function call can be used to verify the correlation methods by measuring
             # correlation between authentic similarity values and approximately zero values or other combinations
-            # corrs = pool.map(
-            #     _test_wrapper_corr,
-            #     [(city, dia, lay, measure, reference) for _ in range(parallell_jobs)],
-            # )
+            corrs = pool.map(
+                _test_wrapper_corr,
+                [(city, dia, lay, measure, reference) for _ in range(parallel_jobs)],
+            )
             corr = np.average(np.array(corrs))
             std = np.std(np.array(corrs))
             result.append([corr, dia, std])
