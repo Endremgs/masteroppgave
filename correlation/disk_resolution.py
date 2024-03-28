@@ -110,7 +110,7 @@ NULL_TEST_CSV = _mirrorDiagonal(
 
 BUCKET_TEST_CSV_DISK_ROME = _mirrorDiagonal(
     pd.read_csv(
-        "../hashed_similarities/similarity_values/disk/rome/disk_rome-dtw.csv",
+        "../hashed_similarities/similarity_values/disk/rome/disk_rome-dtw-unmirrored.csv",
         index_col=0,
     )
 ).flatten()
@@ -262,8 +262,10 @@ def run_bucket_test():
     # kendall_corr = scipy.stats.kendalltau(hash_array, truesim_array_dtw)
     # print("Kendall_corr", kendall_corr)
 
-    test_corr_bucket = np.corrcoef(edited_test_csv, truesim_array_dtw)[0][1]
-    test_corr = np.corrcoef(original_test_csv, truesim_array_dtw)[0][1]
+    # test_corr_bucket = np.corrcoef(edited_test_csv, truesim_array_dtw)[0][1]
+    test_corr_bucket = scipy.stats.kendalltau(edited_test_csv, truesim_array_dtw)
+    # test_corr = np.corrcoef(original_test_csv, truesim_array_dtw)[0][1]
+    test_corr = scipy.stats.kendalltau(original_test_csv, truesim_array_dtw)
 
     print("Bucket test corr  ", test_corr_bucket)
     print("Original test corr", test_corr)
